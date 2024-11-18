@@ -11,7 +11,7 @@ def find_nearest_index(array, value):
 
 def get_angular_diameter(gaia_id, Teff, mettalicity, log_g):
     wavelen, obs_flux_values_Jy = get_flux_values(gaia_id)
-    SED_wavelen, SED_fluxes_Jy = SED_interpolator(Teff, mettalicity, log_g)
+    SED_wavelen, SED_fluxes_Jy = SED_attenuated(gaia_id, Teff, mettalicity, log_g)
 
     nearest_index = []
     for i in range(len(wavelen)):
@@ -88,9 +88,9 @@ distance = 13.9 * u.pc
 SWEET_cat_value = 1.156 * R_Sun
 SWEET_cat_value = SWEET_cat_value.to(R_Sun)
 
-SED_plot(gaia_id, Teff, mettalicity, log_g,'SI')
-stellar_rad = create_dataframe(gaia_id, Teff, mettalicity, log_g, distance, 'Jy')
+#SED_plot(gaia_id, Teff, mettalicity, log_g,'SI')
+#stellar_rad = create_dataframe(gaia_id, Teff, mettalicity, log_g, distance, 'Jy')
 
-print('Mean value:', stellar_rad)
-print('SWEET-cat value:', SWEET_cat_value)
-print('Erro relativamente ao tabelado:', abs(SWEET_cat_value - stellar_rad) / SWEET_cat_value * 100,'%')
+#print('Mean value:', stellar_rad)
+#print('SWEET-cat value:', SWEET_cat_value)
+#print('Erro relativamente ao tabelado:', abs(SWEET_cat_value - stellar_rad) / SWEET_cat_value * 100,'%')
