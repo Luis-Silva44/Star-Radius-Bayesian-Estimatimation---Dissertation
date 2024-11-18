@@ -4,8 +4,8 @@ from astroquery.vizier import Vizier
 import numpy as np
 from uncertainties import ufloat, nominal_value
 import matplotlib.pyplot as plt
-from dust_extinction.parameter_averages import G23
-from extinction import ccm89, apply
+
+
  
 
 #STILL NEEDED: REMOVE WARNING FROM COORDINATES
@@ -127,4 +127,4 @@ def get_flux_values(gaia_id):
 
 # %% 
 wavelen, flux = get_flux_values(1019003226022657920)
-flux
+#flux
