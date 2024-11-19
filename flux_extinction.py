@@ -23,8 +23,7 @@ def color_excess(Teff, mettalicity, gaia_id):
     int_color =  intrinsic_color(Teff, mettalicity)
     return color - int_color[0]
 
-def flux_extinction(wavelen, flux, Teff, mettalicity, gaia_id):
-    col_exc = color_excess(Teff, mettalicity, gaia_id)
-    print("E(B-V) value:", col_exc)
-    flux_ext = apply(ccm89(wavelen.to(u.angstrom), abs(col_exc*3.1), 3.1), flux)
+def flux_extinction(wavelen, flux, Ebv):
+    print("E(B-V) value:", Ebv)
+    flux_ext = apply(ccm89(wavelen.to(u.angstrom), abs(Ebv*3.1), 3.1), flux)
     return flux_ext
