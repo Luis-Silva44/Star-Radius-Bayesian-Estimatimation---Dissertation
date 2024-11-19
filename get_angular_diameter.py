@@ -9,9 +9,9 @@ def find_nearest_index(array, value):
         index = (np.abs(array - value)).argmin()
         return index
 
-def get_angular_diameter(gaia_id, Teff, mettalicity, log_g):
+def get_angular_diameter(gaia_id, Teff, mettalicity, log_g, Ebv):
     wavelen, obs_flux_values_Jy = get_flux_values(gaia_id)
-    SED_wavelen, SED_fluxes_Jy = SED_attenuated(gaia_id, Teff, mettalicity, log_g)
+    SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, mettalicity, log_g, Ebv)
 
     nearest_index = []
     for i in range(len(wavelen)):
@@ -30,8 +30,8 @@ def get_angular_diameter(gaia_id, Teff, mettalicity, log_g):
     return wavelen, obs_flux_values_Jy, model_flux_values_Jy, angular_diameter_arcsec
 
 # %% 
-def create_dataframe(gaia_id, Teff, mettalicity, log_g, distance, unit):
-    wavelen, obs_flux_values_Jy, model_flux_values_Jy, ang_diam = get_angular_diameter(gaia_id, Teff, mettalicity, log_g)
+def create_dataframe(gaia_id, Teff, mettalicity, log_g, Ebv, distance, unit):
+    wavelen, obs_flux_values_Jy, model_flux_values_Jy, ang_diam = get_angular_diameter(gaia_id, Teff, mettalicity, log_g,Ebv)
     R_Sun = 6.957e8 * u.m
     distance = distance.to(R_Sun)
     ang_diam = ang_diam.to(u.rad)
@@ -62,35 +62,24 @@ def create_dataframe(gaia_id, Teff, mettalicity, log_g, distance, unit):
     return mean_stellar_radius
 # %% 
 R_Sun = 6.957e8 * u.m
-gaia_id = 1019003226022657920
-Teff = 5581   
-mettalicity = 0.33 
-log_g = 4.33 
-distance = 66.0 * u.pc
-SWEET_cat_value = 1.070  * R_Sun
+gaia_id = 3788394461991295488
+Teff = 6265
+mettalicity = 0.15
+log_g = 4.38
+Ebv = 0.039
+distance = 359.4 * u.pc
+SWEET_cat_value = 1.468 * R_Sun
 SWEET_cat_value = SWEET_cat_value.to(R_Sun)
 
-SED_plot(gaia_id, Teff, mettalicity, log_g,'SI')
-stellar_rad = create_dataframe(gaia_id, Teff, mettalicity, log_g, distance, 'Jy')
+SED_plot(gaia_id, Teff, mettalicity, log_g, Ebv, 'SI')
+stellar_rad = create_dataframe(gaia_id, Teff, mettalicity, log_g, Ebv, distance, 'Jy')
 
 print('Mean value:', stellar_rad)
 print('SWEET-cat value:', SWEET_cat_value)
 print('Erro relativamente ao tabelado:', abs(SWEET_cat_value - stellar_rad) / SWEET_cat_value * 100,'%')
 
 # %% 
-# %% 
-R_Sun = 6.957e8 * u.m
-gaia_id = 777254360337133312   
-Teff = 5924     
-mettalicity = 0.06 
-log_g = 4.308 
-distance = 13.9 * u.pc
-SWEET_cat_value = 1.156 * R_Sun
-SWEET_cat_value = SWEET_cat_value.to(R_Sun)
 
-#SED_plot(gaia_id, Teff, mettalicity, log_g,'SI')
-#stellar_rad = create_dataframe(gaia_id, Teff, mettalicity, log_g, distance, 'Jy')
-
-#print('Mean value:', stellar_rad)
-#print('SWEET-cat value:', SWEET_cat_value)
-#print('Erro relativamente ao tabelado:', abs(SWEET_cat_value - stellar_rad) / SWEET_cat_value * 100,'%')
+# NEXT TO ADD
+## Search by star name OR gaia id 
+## Read file of test stars
