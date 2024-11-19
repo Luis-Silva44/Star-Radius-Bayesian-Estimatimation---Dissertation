@@ -73,18 +73,18 @@ def SED_interpolator(Teff,mettalicity,logg):
     return SED_wavelen, model_flux_Jy
 
 
-def SED_attenuated(gaia_id,Teff,mettalicity,logg):
+def SED_attenuated(Teff,mettalicity,logg, Ebv):
     wavelen, flux = SED_interpolator(Teff,mettalicity,logg)
     wavelen = wavelen.astype(np.float64)
-    flux_attenuated = flux_extinction(wavelen, flux, Teff, mettalicity, gaia_id)
+    flux_attenuated = flux_extinction(wavelen, flux, Ebv)
     return wavelen, flux_attenuated
 
 
 
 # %% 
-def SED_plot(gaia_id, Teff, mettalicity, log_g, unit):
+def SED_plot(gaia_id, Teff, mettalicity, log_g, Ebv, unit):
     SED_wavelen, model_flux_Jy= SED_interpolator(Teff,mettalicity,log_g)
-    _, flux_attenuated = SED_attenuated(gaia_id,Teff,mettalicity,log_g)
+    _, flux_attenuated = SED_attenuated(Teff,mettalicity,log_g, Ebv)
     model_flux = flux_unit_change(model_flux_Jy, unit)
     flux_attenuated = flux_unit_change(flux_attenuated, unit)
 
@@ -118,5 +118,6 @@ gaia_id = 1019003226022657920
 Teff = 5581 
 mettalicity = 0.33
 log_g = 4.33
+Ebv = 0.3
 
-#SED_plot(gaia_id, Teff, mettalicity, log_g,'Jy')
+SED_plot(gaia_id, Teff, mettalicity, log_g, Ebv,'Jy')
