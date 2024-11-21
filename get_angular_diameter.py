@@ -9,8 +9,8 @@ def find_nearest_index(array, value):
         index = (np.abs(array - value)).argmin()
         return index
 
-def get_angular_diameter(gaia_id, Teff, mettalicity, log_g, Ebv):
-    wavelen, obs_flux_values_Jy = get_flux_values(gaia_id)
+def get_angular_diameter(star_name, Teff, mettalicity, log_g, Ebv):
+    wavelen, obs_flux_values_Jy = get_flux_values(star_name)
     SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, mettalicity, log_g, Ebv)
 
     nearest_index = []
@@ -30,8 +30,8 @@ def get_angular_diameter(gaia_id, Teff, mettalicity, log_g, Ebv):
     return wavelen, obs_flux_values_Jy, model_flux_values_Jy, angular_diameter_arcsec
 
 # %% 
-def create_dataframe(gaia_id, Teff, mettalicity, log_g, Ebv, distance, unit):
-    wavelen, obs_flux_values_Jy, model_flux_values_Jy, ang_diam = get_angular_diameter(gaia_id, Teff, mettalicity, log_g,Ebv)
+def create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit):
+    wavelen, obs_flux_values_Jy, model_flux_values_Jy, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
     R_Sun = 6.957e8 * u.m
     distance = distance.to(R_Sun)
     ang_diam = ang_diam.to(u.rad)
@@ -62,24 +62,47 @@ def create_dataframe(gaia_id, Teff, mettalicity, log_g, Ebv, distance, unit):
     return mean_stellar_radius
 # %% 
 R_Sun = 6.957e8 * u.m
-gaia_id = 3788394461991295488
-Teff = 6265
-mettalicity = 0.15
-log_g = 4.38
-Ebv = 0.039
-distance = 359.4 * u.pc
-SWEET_cat_value = 1.468 * R_Sun
-SWEET_cat_value = SWEET_cat_value.to(R_Sun)
+star_name = 'GJ176'
+Teff = 3355
+mettalicity = -0.01
+log_g = 4.79
+Ebv = 0.015
+distance = 9.5 * u.pc
+table_value = 0.394 * R_Sun
+table_value = table_value.to(R_Sun)
 
-SED_plot(gaia_id, Teff, mettalicity, log_g, Ebv, 'SI')
-stellar_rad = create_dataframe(gaia_id, Teff, mettalicity, log_g, Ebv, distance, 'Jy')
+#SED_plot(star_name, Teff, mettalicity, log_g, Ebv, 'SI')
+#stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, 'Jy')
 
-print('Mean value:', stellar_rad)
-print('SWEET-cat value:', SWEET_cat_value)
-print('Erro relativamente ao tabelado:', abs(SWEET_cat_value - stellar_rad) / SWEET_cat_value * 100,'%')
+#rint('Mean value:', stellar_rad)
+#print('SWEET-cat value:', table_value)
+#print('Erro relativamente ao tabelado:', abs(table_value - stellar_rad) / table_value * 100,'%')
+
+
+# %% 
+def parameter_unloader(star_list, unit):
+    for i in range(len(star_list)):
+        star_name = star_list['Star'][i]
+        Teff = star_list['Teff'][i]
+        mettalicity = star_list['Fe/H'][i]
+        log_g = star_list['logg'][i]
+        Ebv = float(star_list['E(B-V)'][i])
+        distance = float(star_list['Distance'][i]) * u.pc
+        table_value = star_list['Radius'][i]
+
+        print('Star being tested:', star_name)
+        SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
+        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+
+        print('Mean value of radius computed:', stellar_rad)
+        print('Table value of radius:', table_value)
+        print('--------')
 
 # %% 
 
-# NEXT TO ADD
-## Search by star name OR gaia id 
-## Read file of test stars
+star_data = pd.read_csv('~/git_project/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
+#star_test_subset = star_data.iloc[]
+
+## PROBLEM: subset has a different i than cycle 
+#parameter_unloader(star_test_subset, 'Jy')
+
