@@ -2,9 +2,9 @@
 import astropy.units as u
 from astroquery.vizier import Vizier
 import numpy as np
-from uncertainties import ufloat, nominal_value
+from uncertainties import ufloat
 import matplotlib.pyplot as plt
-
+from astroquery.simbad import Simbad
 
  
 
@@ -26,8 +26,15 @@ def flux_unit_change(value,unit):
     else:
         raise ValueError('Unit not recognized by programm')
     
-
-
+def retrieve_gaia_id(star_name):
+    if type(star_name) == int:
+        gaia_id = star_name
+    elif type(star_name) == str:
+        result_table = Simbad.query_objectids(star_name)
+        for x in result_table:
+            if 'Gaia DR3' in x['ID']:
+                gaia_id = str(x['ID']).replace('Gaia DR3 ', '')
+    return gaia_id
 
 # %% 
 def vizier_coords(gaia_id):
@@ -82,7 +89,9 @@ def mag_to_flux(mag,band): # in W cm-2 micrometer-1
     return flux_constant * 10**(-mag * 0.4)
 
 #%%
-def get_flux_values(gaia_id):
+def get_flux_values(star_name):
+    
+    gaia_id = retrieve_gaia_id(star_name)
 
     filter_bands = {'GBP':0.532, 'G': 0.673, 'GRP':0.797, 
                     'J':1.25, 'H':1.65, 'K':2.15,
@@ -126,5 +135,5 @@ def get_flux_values(gaia_id):
     return filter_wavelen, flux_values_Jy
 
 # %% 
-wavelen, flux = get_flux_values(1019003226022657920)
+#wavelen, flux = get_flux_values(1019003226022657920)
 #flux
