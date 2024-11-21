@@ -82,7 +82,7 @@ def SED_attenuated(Teff,mettalicity,logg, Ebv):
 
 
 # %% 
-def SED_plot(gaia_id, Teff, mettalicity, log_g, Ebv, unit):
+def SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit):
     SED_wavelen, model_flux_Jy= SED_interpolator(Teff,mettalicity,log_g)
     _, flux_attenuated = SED_attenuated(Teff,mettalicity,log_g, Ebv)
     model_flux = flux_unit_change(model_flux_Jy, unit)
@@ -97,7 +97,7 @@ def SED_plot(gaia_id, Teff, mettalicity, log_g, Ebv, unit):
     plt.title('SED of stellar model')
     plt.show()
 
-    band_wavelen, flux_values_Jy = get_flux_values(gaia_id)
+    band_wavelen, flux_values_Jy = get_flux_values(star_name)
     flux_values = flux_unit_change(flux_values_Jy, unit)
     flux_val = []
     flux_unc = []
@@ -114,10 +114,10 @@ def SED_plot(gaia_id, Teff, mettalicity, log_g, Ebv, unit):
     plt.show()
 
 # %% 
-gaia_id = 1019003226022657920
+star_name = 1019003226022657920
 Teff = 5581 
 mettalicity = 0.33
 log_g = 4.33
 Ebv = 0.3
 
-SED_plot(gaia_id, Teff, mettalicity, log_g, Ebv,'Jy')
+#SED_plot(star_name, Teff, mettalicity, log_g, Ebv,'Jy')
