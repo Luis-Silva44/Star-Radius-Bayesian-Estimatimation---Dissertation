@@ -80,7 +80,8 @@ table_value = table_value.to(R_Sun)
 
 
 # %% 
-def parameter_unloader(star_list, unit):
+def star_tester(star_list, unit):
+    problem_stars = []
     for i in range(len(star_list)):
         star_name = star_list['Star'][i]
         Teff = star_list['Teff'][i]
@@ -91,18 +92,28 @@ def parameter_unloader(star_list, unit):
         table_value = star_list['Radius'][i]
 
         print('Star being tested:', star_name)
-        SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
-        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+        try:
+            SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
+            stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
 
-        print('Mean value of radius computed:', stellar_rad)
-        print('Table value of radius:', table_value)
-        print('--------')
+            print('Mean value of radius computed:', stellar_rad)
+            print('Table value of radius:', table_value)
+            print('--------')
 
+        except Exception as e:
+            problem_stars.append(star_name)
+            print('Issue with star', star_name)
+            print('--------')
+
+    return problem_stars
 # %% 
 
 star_data = pd.read_csv('~/git_project/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
-#star_test_subset = star_data.iloc[]
+star_test_subset = star_data.head()
 
+problem_list = star_tester(star_test_subset, 'Jy')
+# %% 
+print(problem_list)
 ## PROBLEM: subset has a different i than cycle 
-#parameter_unloader(star_test_subset, 'Jy')
+
 
