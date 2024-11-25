@@ -54,12 +54,13 @@ def mean_flux_graph(wavelen, stellar_radius,table_value):
     mean_radius = ax.axhline(mean_stellar_radius.value.nominal_value, color='g')
     mean_radius.set_label('Mean stellar radius value')
     ax.legend(framealpha=0.1)
+    plt.grid()
     plt.xlabel('Wavelength of each band')
     plt.ylabel('Star Radius')
     plt.show()
 
 # %% 
-def create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, table_value, distance, unit):
+def create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit):
     wavelen, obs_flux_values_Jy, model_flux_values_Jy, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
     R_Sun = 6.957e8 * u.m
     distance = distance.to(R_Sun)
@@ -116,8 +117,8 @@ def star_set_tester(star_list, unit, show_plot):
 
                 SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
                 mean_flux_graph(wavelen, stellar_radius,table_value) 
-                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, table_value, distance, unit)
-                mean_flux_graph(wavelen, stellar_radius,table_value) 
+                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+                
                 print('Mean value of radius computed:', stellar_rad)
                 print('Table value of radius:', table_value)
                 print('--------')
@@ -129,7 +130,7 @@ def star_set_tester(star_list, unit, show_plot):
 
         elif show_plot == 'no':
             try:
-                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, table_value, distance, unit)
+                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
 
                 print('Mean value of radius computed:', stellar_rad)
                 print('Table value of radius:', table_value)
@@ -160,12 +161,12 @@ def single_star_tester(star_name, Teff, mettalicity, log_g, Ebv, distance, table
 
         SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
         mean_flux_graph(wavelen, stellar_radius,table_value)
-        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, table_value, distance, unit)
+        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
         print('Mean value of radius computed:', stellar_rad)
         print('Table value of radius:', table_value)
         
     elif show_plot == 'no':
-        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, table_value, distance, unit)
+        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
         print('Mean value of radius computed:', stellar_rad)
         print('Table value of radius:', table_value)
 
@@ -175,13 +176,10 @@ star_data = pd.read_csv('~/git_project/testdata/list_stars.txt', sep="\t", heade
 star_test_subset = star_data.head()
 star_test = star_data.iloc[0:1]
 
-#problem_list = star_set_tester(star_test, 'SI', show_plot='yes')
+problem_list = star_set_tester(star_test, 'SI', show_plot='yes')
 # %% 
 #print(problem_list)
 ## PROBLEM: subset has a different i than cycle 
 # %% 
 
-single_star_tester('HIP 41378', 6371, 0.046, 4.07, 0.021, 106.0, 1.299, 'SI', 'yes')
-
-# %% 
-
+single_star_tester('HIP 41378', 6371, 0.046, 4.07, 0.021, 106.0, 1.299, 'SI', 'no')
