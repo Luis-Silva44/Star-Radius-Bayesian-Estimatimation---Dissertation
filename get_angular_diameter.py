@@ -3,6 +3,7 @@ from get_flux_values import *
 from SED_fitting import * 
 import pandas as pd
 import uncertainties.umath as umath
+import time
 
 # %% 
 def find_nearest_index(array, value):
@@ -56,32 +57,15 @@ def create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit):
     flux_table.rename(columns={col: f"{col} ({unit})" for col, unit in column_units.items()}, inplace=True)
 
     print(flux_table)
-    print('---')
     mean_stellar_radius = np.mean(stellar_radius)
 
     return mean_stellar_radius
-# %% 
-R_Sun = 6.957e8 * u.m
-star_name = 'GJ176'
-Teff = 3355
-mettalicity = -0.01
-log_g = 4.79
-Ebv = 0.015
-distance = 9.5 * u.pc
-table_value = 0.394 * R_Sun
-table_value = table_value.to(R_Sun)
-
-#SED_plot(star_name, Teff, mettalicity, log_g, Ebv, 'SI')
-#stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, 'Jy')
-
-#rint('Mean value:', stellar_rad)
-#print('SWEET-cat value:', table_value)
-#print('Erro relativamente ao tabelado:', abs(table_value - stellar_rad) / table_value * 100,'%')
-
 
 # %% 
-def star_tester(star_list, unit):
+def star_set_tester(star_list, unit, show_plot):
+    time_start = time.time()
     problem_stars = []
+
     for i in range(len(star_list)):
         star_name = star_list['Star'][i]
         Teff = star_list['Teff'][i]
@@ -92,28 +76,66 @@ def star_tester(star_list, unit):
         table_value = star_list['Radius'][i]
 
         print('Star being tested:', star_name)
-        try:
-            SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
-            stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+        if show_plot == 'yes':
+            try:
+                SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
+                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
 
-            print('Mean value of radius computed:', stellar_rad)
-            print('Table value of radius:', table_value)
-            print('--------')
+                print('Mean value of radius computed:', stellar_rad)
+                print('Table value of radius:', table_value)
+                print('--------')
 
-        except Exception as e:
-            problem_stars.append(star_name)
-            print('Issue with star', star_name)
-            print('--------')
+            except Exception as e:
+                problem_stars.append(star_name)
+                print('Issue with star', star_name)
+                print('--------')
+        elif show_plot == 'no':
+            try:
+                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+
+                print('Mean value of radius computed:', stellar_rad)
+                print('Table value of radius:', table_value)
+                print('--------')
+
+            except Exception as e:
+                problem_stars.append(star_name)
+                print('Issue with star', star_name)
+                print('--------')
+
+    time_end = time.time()
+    print('Program took', time_end - time_start, 'seconds to run for', len(star_list),'stars')
+    print(len(problem_stars), 'stars had issues with computing radius')
 
     return problem_stars
+
+
+def single_star_tester(star_name, Teff, mettalicity, log_g, Ebv, distance, table_value, unit, show_plot):
+    distance = distance * u.pc
+    R_Sun = 6.957e8 * u.m
+    table_value = table_value * R_Sun
+    table_value = table_value.to(R_Sun)
+
+    if show_plot == 'yes':
+        SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
+        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+        print('Mean value of radius computed:', stellar_rad)
+        print('Table value of radius:', table_value)
+    elif show_plot == 'no':
+        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+        print('Mean value of radius computed:', stellar_rad)
+        print('Table value of radius:', table_value)
+
 # %% 
 
 star_data = pd.read_csv('~/git_project/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
 star_test_subset = star_data.head()
 
-problem_list = star_tester(star_test_subset, 'Jy')
+#problem_list = star_set_tester(star_test_subset, 'SI', show_plot='yes')
 # %% 
-print(problem_list)
+#print(problem_list)
 ## PROBLEM: subset has a different i than cycle 
+# %% 
+
+#single_star_tester('HIP 4', 6371, 0.046, 4.07, 0.021, 106.0, 1.299, 'SI', 'yes')
 
 
