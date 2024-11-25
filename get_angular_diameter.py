@@ -4,6 +4,7 @@ from SED_fitting import *
 import pandas as pd
 import uncertainties.umath as umath
 import time
+from uncertainties import nominal_value
 
 # %% 
 def find_nearest_index(array, value):
@@ -31,7 +32,34 @@ def get_angular_diameter(star_name, Teff, mettalicity, log_g, Ebv):
     return wavelen, obs_flux_values_Jy, model_flux_values_Jy, angular_diameter_arcsec
 
 # %% 
-def create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit):
+def mean_flux_graph(wavelen, stellar_radius,table_value):
+    
+    mean_stellar_radius = np.mean(stellar_radius)
+
+    stellar_radius_vals = []
+    stellar_radius_unc = []
+    for i in range(len(wavelen)):
+        stellar_radius_vals.append(stellar_radius[i].value.nominal_value)
+        stellar_radius_unc.append(stellar_radius[i].value.std_dev)
+    
+    fig, ax = plt.subplots(1, 1, sharex=True)
+    plt.title('Radius values for each band \n and comparison with mean value and table value')
+    values = ax.errorbar(wavelen, stellar_radius_vals, yerr=stellar_radius_unc, fmt='o',ecolor='orange')
+    values.set_label('Values of radius computed in each band')
+    value_table = ax.axhline(table_value.value)
+    value_table.set_label('Table value of radius')
+    percent_difference = ax.axhline(table_value.value + 0.05*table_value.value, color='r', linestyle='--')
+    percent_difference.set_label('5 percent error of table value')
+    ax.axhline(table_value.value - 0.05*table_value.value, color='r', linestyle='--')
+    mean_radius = ax.axhline(mean_stellar_radius.value.nominal_value, color='g')
+    mean_radius.set_label('Mean stellar radius value')
+    ax.legend(framealpha=0.1)
+    plt.xlabel('Wavelength of each band')
+    plt.ylabel('Star Radius')
+    plt.show()
+
+# %% 
+def create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, table_value, distance, unit):
     wavelen, obs_flux_values_Jy, model_flux_values_Jy, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
     R_Sun = 6.957e8 * u.m
     distance = distance.to(R_Sun)
@@ -56,7 +84,7 @@ def create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit):
     
     flux_table.rename(columns={col: f"{col} ({unit})" for col, unit in column_units.items()}, inplace=True)
 
-    print(flux_table)
+    #print(flux_table)
     mean_stellar_radius = np.mean(stellar_radius)
 
     return mean_stellar_radius
@@ -75,12 +103,21 @@ def star_set_tester(star_list, unit, show_plot):
         distance = float(star_list['Distance'][i]) * u.pc
         table_value = star_list['Radius'][i]
 
+        R_Sun = 6.957e8 * u.m
+        table_value = table_value * R_Sun
+        table_value = table_value.to(R_Sun)
+
         print('Star being tested:', star_name)
         if show_plot == 'yes':
             try:
-                SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
-                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+                wavelen, _, _, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
+                ang_diam = ang_diam.to(u.rad)
+                stellar_radius = distance.to(R_Sun) * ang_diam.value / 2
 
+                SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
+                mean_flux_graph(wavelen, stellar_radius,table_value) 
+                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, table_value, distance, unit)
+                mean_flux_graph(wavelen, stellar_radius,table_value) 
                 print('Mean value of radius computed:', stellar_rad)
                 print('Table value of radius:', table_value)
                 print('--------')
@@ -89,9 +126,10 @@ def star_set_tester(star_list, unit, show_plot):
                 problem_stars.append(star_name)
                 print('Issue with star', star_name)
                 print('--------')
+
         elif show_plot == 'no':
             try:
-                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, table_value, distance, unit)
 
                 print('Mean value of radius computed:', stellar_rad)
                 print('Table value of radius:', table_value)
@@ -116,12 +154,18 @@ def single_star_tester(star_name, Teff, mettalicity, log_g, Ebv, distance, table
     table_value = table_value.to(R_Sun)
 
     if show_plot == 'yes':
+        wavelen, _, _, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
+        ang_diam = ang_diam.to(u.rad)
+        stellar_radius = distance.to(R_Sun) * ang_diam.value / 2
+
         SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
-        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+        mean_flux_graph(wavelen, stellar_radius,table_value)
+        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, table_value, distance, unit)
         print('Mean value of radius computed:', stellar_rad)
         print('Table value of radius:', table_value)
+        
     elif show_plot == 'no':
-        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
+        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, table_value, distance, unit)
         print('Mean value of radius computed:', stellar_rad)
         print('Table value of radius:', table_value)
 
@@ -129,13 +173,15 @@ def single_star_tester(star_name, Teff, mettalicity, log_g, Ebv, distance, table
 
 star_data = pd.read_csv('~/git_project/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
 star_test_subset = star_data.head()
+star_test = star_data.iloc[0:1]
 
-#problem_list = star_set_tester(star_test_subset, 'SI', show_plot='yes')
+#problem_list = star_set_tester(star_test, 'SI', show_plot='yes')
 # %% 
 #print(problem_list)
 ## PROBLEM: subset has a different i than cycle 
 # %% 
 
-#single_star_tester('HIP 4', 6371, 0.046, 4.07, 0.021, 106.0, 1.299, 'SI', 'yes')
+single_star_tester('HIP 41378', 6371, 0.046, 4.07, 0.021, 106.0, 1.299, 'SI', 'yes')
 
+# %% 
 
