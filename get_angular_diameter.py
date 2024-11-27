@@ -5,6 +5,7 @@ import pandas as pd
 import uncertainties.umath as umath
 import time
 from uncertainties import nominal_value
+from astropy.constants import R_sun
 
 # %% 
 def find_nearest_index(array, value):
@@ -172,7 +173,7 @@ def single_star_tester(star_name, Teff, mettalicity, log_g, Ebv, distance, table
 
 # %% 
 
-star_data = pd.read_csv('~/git_project/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
+star_data = pd.read_csv('~/tese/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
 star_test_subset = star_data.head()
 star_test = star_data.iloc[0:1]
 
@@ -182,4 +183,54 @@ problem_list = star_set_tester(star_test, 'SI', show_plot='yes')
 ## PROBLEM: subset has a different i than cycle 
 # %% 
 
-single_star_tester('HIP 41378', 6371, 0.046, 4.07, 0.021, 106.0, 1.299, 'SI', 'no')
+single_star_tester('WASP-84', 5221, 0.05, 4.28, 0.020, 100.4, 0.828, 'SI', 'no')
+
+# %% 
+star_name = 'WASP-84'
+Teff = 5221
+mettalicity = 0.05
+log_g = 4.28
+Ebv = 0.020
+
+wavelen, obs_flux_values_Jy, model_flux_values_Jy, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g, Ebv)
+
+obs_flux_values = flux_unit_change(obs_flux_values_Jy, 'SI')
+model_flux_values = flux_unit_change(model_flux_values_Jy, 'SI')
+
+#model_flux_values = model_flux_values * radius**2 / distance**2
+
+obs_flux_vals = []
+obs_flux_unc = []
+for i in range(len(wavelen)):
+    obs_flux_vals.append(obs_flux_values[i].value.nominal_value)
+    obs_flux_unc.append(obs_flux_values[i].value.std_dev)
+
+obs_flux_vals = np.array(obs_flux_vals) * model_flux_values.unit
+obs_flux_unc = np.array(obs_flux_unc) * model_flux_values.unit
+
+plt.plot(wavelen, model_flux_values,'o')
+plt.errorbar(wavelen, obs_flux_vals, yerr = obs_flux_unc, fmt='o')
+plt.show()
+
+# %% 
+print(obs_flux_vals)
+print(obs_flux_unc)
+print(model_flux_values)
+
+def minimization_function(radius, distance, obs_flux_vals, obs_flux_unc, model_flux_values): 
+    distance = distance * u.pc
+    model_flux_values = model_flux_values * radius**2 / distance.to(R_sun) ** 2
+    chi_squared = 0
+    for i in range(len(model_flux_values)):
+        chi_squared += ((model_flux_values[i].value - obs_flux_vals[i].value) / obs_flux_unc[i].value) ** 2
+    return chi_squared
+
+from scipy.optimize import minimize
+
+result = minimize(minimization_function, x0=1.0,args=(100.4,obs_flux_vals, obs_flux_unc, model_flux_values))
+result
+
+# %% 
+
+print(abs(0.8329 - 0.828) / 0.828 * 100)
+print(abs(0.8156 - 0.828) / 0.828 * 100)
