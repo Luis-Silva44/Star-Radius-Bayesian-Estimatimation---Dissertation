@@ -89,10 +89,8 @@ def create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit):
     
     flux_table.rename(columns={col: f"{col} ({unit})" for col, unit in column_units.items()}, inplace=True)
 
-    #print(flux_table)
-    mean_stellar_radius = np.mean(stellar_radius)
-
-    return mean_stellar_radius
+    print(flux_table)
+    
 
 # %% 
 def star_set_mean_tester(star_list, unit, show_plot):
@@ -112,13 +110,15 @@ def star_set_mean_tester(star_list, unit, show_plot):
         table_value = table_value.to(R_sun)
 
         print('Star being tested:', star_name)
+
+        wavelen, _, _, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
+        ang_diam = ang_diam.to(u.rad)
+        stellar_radius = distance.to(R_sun) * ang_diam.value / 2
+        mean_stellar_radius = np.mean(stellar_radius)
+
         if show_plot == 'yes':
             try:
-                wavelen, _, _, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
-                ang_diam = ang_diam.to(u.rad)
-                stellar_radius = distance.to(R_sun) * ang_diam.value / 2
-                mean_stellar_radius = np.mean(stellar_radius)
-                mean_flux_graph(wavelen, stellar_radius,table_value) 
+                mean_flux_graph(wavelen, stellar_radius, table_value) 
                 
                 print('Mean value of radius computed:', mean_stellar_radius)
                 print('Table value of radius:', table_value)
@@ -131,9 +131,7 @@ def star_set_mean_tester(star_list, unit, show_plot):
 
         elif show_plot == 'no':
             try:
-                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
-
-                print('Mean value of radius computed:', stellar_rad)
+                print('Mean value of radius computed:', mean_stellar_radius)
                 print('Table value of radius:', table_value)
                 print('--------')
 
@@ -146,7 +144,7 @@ def star_set_mean_tester(star_list, unit, show_plot):
     print('Program took', time_end - time_start, 'seconds to run for', len(star_list),'stars')
     print(len(problem_stars), 'stars had issues with computing radius')
 
-    return problem_stars
+    return problem_stars, mean_stellar_radius
 
 
 def single_star_mean_tester(star_name, Teff, mettalicity, log_g, Ebv, distance, table_value, unit, show_plot):
@@ -175,8 +173,9 @@ star_data = pd.read_csv('~/git_project/testdata/list_stars.txt', sep="\t", heade
 star_test_subset = star_data.head()
 star_test = star_data.iloc[0:1]
 
-problem_list = star_set_mean_tester(star_test, 'SI', show_plot='yes')
-#print(problem_list)
+problem_list, mean_stellar_radius = star_set_mean_tester(star_test, 'SI', show_plot='yes')
+print(problem_list)
+print(mean_stellar_radius)
 # %% 
 single_star_mean_tester('WASP-84', 5221, 0.05, 4.28, 0.020, 100.4, 0.828, 'SI', 'no')
 # %% 
@@ -278,4 +277,4 @@ minimization_radius,result = SED_fitting(star_name, Teff, mettalicity, log_g, Eb
 
 # %% 
 minimization_radius,result = SED_fitting_extinction(star_name, Teff, mettalicity, log_g, distance, table_value, 'SI', 'yes')
-result.x[1]
+print('Extinction is',result.x[1])
