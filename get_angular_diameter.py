@@ -6,6 +6,8 @@ import uncertainties.umath as umath
 import time
 from uncertainties import nominal_value
 from astropy.constants import R_sun
+from scipy.optimize import minimize
+
 
 # %% 
 def find_nearest_index(array, value):
@@ -14,7 +16,8 @@ def find_nearest_index(array, value):
 
 def get_angular_diameter(star_name, Teff, mettalicity, log_g, Ebv):
     wavelen, obs_flux_values_Jy = get_flux_values(star_name)
-    SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, mettalicity, log_g, Ebv)
+    #SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, mettalicity, log_g, Ebv)
+    SED_wavelen, SED_fluxes_Jy = SED_interpolator(Teff, mettalicity,log_g)
 
     nearest_index = []
     for i in range(len(wavelen)):
@@ -59,17 +62,17 @@ def mean_flux_graph(wavelen, stellar_radius,table_value):
     plt.xlabel('Wavelength of each band')
     plt.ylabel('Star Radius')
     plt.show()
+# %% 
 
 # %% 
 def create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit):
     wavelen, obs_flux_values_Jy, model_flux_values_Jy, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
-    R_Sun = 6.957e8 * u.m
-    distance = distance.to(R_Sun)
+    #distance = distance.to(R_sun)
     ang_diam = ang_diam.to(u.rad)
     obs_flux_values = flux_unit_change(obs_flux_values_Jy, unit)
     model_flux_values = flux_unit_change(model_flux_values_Jy, unit)
 
-    stellar_radius = distance.to(R_Sun) * ang_diam.value / 2 #THIS IS SINE OF A VERY SMALL ANGLE
+    stellar_radius = distance.to(R_sun) * ang_diam.value / 2 #THIS IS SINE OF A VERY SMALL ANGLE
 
     flux_table = pd.DataFrame({
     'Filter Wavelength': wavelen,
@@ -92,7 +95,7 @@ def create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit):
     return mean_stellar_radius
 
 # %% 
-def star_set_tester(star_list, unit, show_plot):
+def star_set_mean_tester(star_list, unit, show_plot):
     time_start = time.time()
     problem_stars = []
 
@@ -105,22 +108,19 @@ def star_set_tester(star_list, unit, show_plot):
         distance = float(star_list['Distance'][i]) * u.pc
         table_value = star_list['Radius'][i]
 
-        R_Sun = 6.957e8 * u.m
-        table_value = table_value * R_Sun
-        table_value = table_value.to(R_Sun)
+        table_value = table_value * R_sun
+        table_value = table_value.to(R_sun)
 
         print('Star being tested:', star_name)
         if show_plot == 'yes':
             try:
                 wavelen, _, _, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
                 ang_diam = ang_diam.to(u.rad)
-                stellar_radius = distance.to(R_Sun) * ang_diam.value / 2
-
-                SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
+                stellar_radius = distance.to(R_sun) * ang_diam.value / 2
+                mean_stellar_radius = np.mean(stellar_radius)
                 mean_flux_graph(wavelen, stellar_radius,table_value) 
-                stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
                 
-                print('Mean value of radius computed:', stellar_rad)
+                print('Mean value of radius computed:', mean_stellar_radius)
                 print('Table value of radius:', table_value)
                 print('--------')
 
@@ -149,88 +149,133 @@ def star_set_tester(star_list, unit, show_plot):
     return problem_stars
 
 
-def single_star_tester(star_name, Teff, mettalicity, log_g, Ebv, distance, table_value, unit, show_plot):
+def single_star_mean_tester(star_name, Teff, mettalicity, log_g, Ebv, distance, table_value, unit, show_plot):
     distance = distance * u.pc
-    R_Sun = 6.957e8 * u.m
-    table_value = table_value * R_Sun
-    table_value = table_value.to(R_Sun)
+    table_value = table_value * R_sun
+    table_value = table_value.to(R_sun)
 
+    wavelen, _, _, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
+    ang_diam = ang_diam.to(u.rad)
+    stellar_radius = distance.to(R_sun) * ang_diam.value / 2
+    mean_stellar_radius = np.mean(stellar_radius)
     if show_plot == 'yes':
-        wavelen, _, _, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g,Ebv)
-        ang_diam = ang_diam.to(u.rad)
-        stellar_radius = distance.to(R_Sun) * ang_diam.value / 2
-
-        SED_plot(star_name, Teff, mettalicity, log_g, Ebv, unit)
         mean_flux_graph(wavelen, stellar_radius,table_value)
-        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
-        print('Mean value of radius computed:', stellar_rad)
+        print('Value of radius computed from mean:', mean_stellar_radius)
         print('Table value of radius:', table_value)
+        print('Error in mean radius value:', abs(mean_stellar_radius - table_value) / table_value * 100, '%')
         
     elif show_plot == 'no':
-        stellar_rad = create_dataframe(star_name, Teff, mettalicity, log_g, Ebv, distance, unit)
-        print('Mean value of radius computed:', stellar_rad)
+        print('Value of radius computed from mean:', mean_stellar_radius)
         print('Table value of radius:', table_value)
+        print('Error in mean radius value:', abs(mean_stellar_radius - table_value) / table_value * 100, '%')
 
 # %% 
 
-star_data = pd.read_csv('~/tese/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
+star_data = pd.read_csv('~/git_project/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
 star_test_subset = star_data.head()
 star_test = star_data.iloc[0:1]
 
-problem_list = star_set_tester(star_test, 'SI', show_plot='yes')
-# %% 
+problem_list = star_set_mean_tester(star_test, 'SI', show_plot='yes')
 #print(problem_list)
-## PROBLEM: subset has a different i than cycle 
 # %% 
+single_star_mean_tester('WASP-84', 5221, 0.05, 4.28, 0.020, 100.4, 0.828, 'SI', 'no')
+# %% 
+def SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, distance, table_value, unit, show_plot):
+    distance = distance * u.parsec
+    wavelen, obs_flux_values_Jy, model_flux_values_Jy, _ = get_angular_diameter(star_name, Teff, mettalicity, log_g, Ebv)
+    model_flux_values_Jy = flux_extinction(wavelen, model_flux_values_Jy, Ebv)
+    obs_flux_values = flux_unit_change(obs_flux_values_Jy, unit)
+    model_flux_values = flux_unit_change(model_flux_values_Jy, unit)
 
-single_star_tester('WASP-84', 5221, 0.05, 4.28, 0.020, 100.4, 0.828, 'SI', 'no')
+    obs_flux_vals = []
+    obs_flux_unc = []
+    for i in range(len(wavelen)):
+        obs_flux_vals.append(obs_flux_values[i].value.nominal_value)
+        obs_flux_unc.append(obs_flux_values[i].value.std_dev)
+
+    obs_flux_values = np.array(obs_flux_vals) * model_flux_values.unit
+    obs_flux_unc = np.array(obs_flux_unc) * model_flux_values.unit
+
+    def minimization_function(radius, distance, model_flux_values, obs_flux_values, obs_flux_unc):
+        model_flux_values = model_flux_values * radius**2 / distance.to(R_sun) ** 2
+        chi_squared = np.sum(((model_flux_values.value - obs_flux_values.value)/ obs_flux_unc.value) ** 2)
+        return chi_squared
+    
+    minimization_result = minimize(minimization_function, x0=1.0, args=(distance,model_flux_values,obs_flux_values, obs_flux_unc), method='Nelder-Mead')
+    minimization_radius= minimization_result.x[0]
+
+    if show_plot == 'yes':
+        minimization_flux = model_flux_values * minimization_radius **2 / distance.to(R_sun) ** 2
+        plt.title('Fitting the modeled flux to the values of observed flux (extinction fixed)')
+        plt.xlabel('Wavelength (μm)')
+        plt.ylabel('Flux')
+        plt.plot(wavelen, minimization_flux, 'o')
+        plt.errorbar(wavelen, obs_flux_values, yerr = obs_flux_unc, fmt='o')
+        plt.grid()
+        plt.legend(['Model flux','Observed flux'])
+        plt.show()
+
+    minimization_radius = (minimization_radius * R_sun).to(R_sun)
+
+    print('Value of minimization radius:', minimization_radius)
+    print('Table value of radius:', (table_value * R_sun).to(R_sun))
+    print('Error in minimization radius:', abs(minimization_radius.value - table_value) / table_value * 100)
+    return minimization_radius, minimization_result
+
+def SED_fitting_extinction(star_name, Teff, mettalicity, log_g, distance, table_value, unit, show_plot):
+    distance = distance * u.parsec
+    wavelen, obs_flux_values_Jy, model_flux_values_Jy, _ = get_angular_diameter(star_name, Teff, mettalicity, log_g, Ebv)
+    
+    obs_flux_values = flux_unit_change(obs_flux_values_Jy, unit)
+    model_flux_values = flux_unit_change(model_flux_values_Jy, unit)
+
+    obs_flux_vals = []
+    obs_flux_unc = []
+    for i in range(len(wavelen)):
+        obs_flux_vals.append(obs_flux_values[i].value.nominal_value)
+        obs_flux_unc.append(obs_flux_values[i].value.std_dev)
+
+    obs_flux_values = np.array(obs_flux_vals) * model_flux_values.unit
+    obs_flux_unc = np.array(obs_flux_unc) * model_flux_values.unit
+
+    def minimization_function(parameters, distance, wavelen, model_flux_values, obs_flux_values, obs_flux_unc):
+        radius, Ebv = parameters
+        model_flux_values = flux_extinction(wavelen, model_flux_values, Ebv)
+        model_flux_values = model_flux_values * radius**2 / distance.to(R_sun) ** 2
+        chi_squared = np.sum(((model_flux_values.value - obs_flux_values.value) / obs_flux_unc.value) ** 2)
+        return chi_squared
+    
+    minimization_result = minimize(minimization_function, x0=(1.0,0.0), args=(distance,wavelen,model_flux_values,obs_flux_values, obs_flux_unc), method='Nelder-Mead')
+    minimization_radius, min_Ebv = minimization_result.x[0], minimization_result.x[1]
+    if show_plot == 'yes':
+        model_flux_values = flux_extinction(wavelen, model_flux_values, min_Ebv)
+        minimization_flux = model_flux_values * minimization_radius **2 / distance.to(R_sun) ** 2
+        plt.title('Fitting the modeled flux to the values of observed flux (extinction estimated)')
+        plt.xlabel('Wavelength (μm)')
+        plt.ylabel('Flux')
+        plt.plot(wavelen, minimization_flux, 'o')
+        plt.errorbar(wavelen, obs_flux_values, yerr = obs_flux_unc, fmt='o')
+        plt.grid()
+        plt.legend(['Model flux','Observed flux'])
+        plt.show()
+
+    minimization_radius = (minimization_radius * R_sun).to(R_sun)
+
+    print('Value of minimization radius:', minimization_radius)
+    print('Table value of radius:', (table_value * R_sun).to(R_sun))
+    print('Error in minimization radius:', abs(minimization_radius.value - table_value) / table_value * 100)
+    return minimization_radius, minimization_result
+# %% 
+star_name = 'HD 176986'
+Teff = 4931
+mettalicity = 0.03
+log_g = 4.44
+distance = 27.9
+table_value = 0.805
+Ebv = 0.024
+
+minimization_radius,result = SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, distance, table_value, 'SI', 'yes')
 
 # %% 
-star_name = 'WASP-84'
-Teff = 5221
-mettalicity = 0.05
-log_g = 4.28
-Ebv = 0.020
-
-wavelen, obs_flux_values_Jy, model_flux_values_Jy, ang_diam = get_angular_diameter(star_name, Teff, mettalicity, log_g, Ebv)
-
-obs_flux_values = flux_unit_change(obs_flux_values_Jy, 'SI')
-model_flux_values = flux_unit_change(model_flux_values_Jy, 'SI')
-
-#model_flux_values = model_flux_values * radius**2 / distance**2
-
-obs_flux_vals = []
-obs_flux_unc = []
-for i in range(len(wavelen)):
-    obs_flux_vals.append(obs_flux_values[i].value.nominal_value)
-    obs_flux_unc.append(obs_flux_values[i].value.std_dev)
-
-obs_flux_vals = np.array(obs_flux_vals) * model_flux_values.unit
-obs_flux_unc = np.array(obs_flux_unc) * model_flux_values.unit
-
-plt.plot(wavelen, model_flux_values,'o')
-plt.errorbar(wavelen, obs_flux_vals, yerr = obs_flux_unc, fmt='o')
-plt.show()
-
-# %% 
-print(obs_flux_vals)
-print(obs_flux_unc)
-print(model_flux_values)
-
-def minimization_function(radius, distance, obs_flux_vals, obs_flux_unc, model_flux_values): 
-    distance = distance * u.pc
-    model_flux_values = model_flux_values * radius**2 / distance.to(R_sun) ** 2
-    chi_squared = 0
-    for i in range(len(model_flux_values)):
-        chi_squared += ((model_flux_values[i].value - obs_flux_vals[i].value) / obs_flux_unc[i].value) ** 2
-    return chi_squared
-
-from scipy.optimize import minimize
-
-result = minimize(minimization_function, x0=1.0,args=(100.4,obs_flux_vals, obs_flux_unc, model_flux_values))
-result
-
-# %% 
-
-print(abs(0.8329 - 0.828) / 0.828 * 100)
-print(abs(0.8156 - 0.828) / 0.828 * 100)
+minimization_radius,result = SED_fitting_extinction(star_name, Teff, mettalicity, log_g, distance, table_value, 'SI', 'yes')
+result.x[1]
