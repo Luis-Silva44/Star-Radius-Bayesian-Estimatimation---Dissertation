@@ -1,11 +1,10 @@
-# %% 
+# %% Imports
 import astropy.units as u
 import numpy as np
 from astroquery.vizier import Vizier
 from astroquery.simbad import Simbad
 from uncertainties import ufloat
-
-# %% 
+from SED_flux import band_wavelen
 
 # Function that allows easy unit changes in the programm. Easy to adapt or add new unit systems
 def flux_unit_change(value,unit):
@@ -24,7 +23,6 @@ def flux_unit_change(value,unit):
         raise ValueError('Unit not recognized by programm')
     
 # %% 
-
 # Function that allows the programm to either look for star name or gaia id. Only requirement 
 # is that gaia_id is an int, and the name a string
 def retrieve_gaia_id(star_name):
@@ -37,6 +35,7 @@ def retrieve_gaia_id(star_name):
                 gaia_id = str(x['ID']).replace('Gaia DR3 ', '')
     return gaia_id
 
+# %% 
 # Function to search the gaia data release 3 and give us the values of flux, flux errors and parallax
 def gaia_values(star_name):
     gaia_id = retrieve_gaia_id(star_name)
@@ -52,13 +51,17 @@ def gaia_values(star_name):
 
         # transform the fluxes into normal flux density units according to the gaia article 
         unit = 1 * u.watt / u.m**2 / u.nm
-        G_flux = G_flux * 1.346109e-21 * unit
-        GBP_flux = GBP_flux * 3.009167E-21 * unit
-        GRP_flux = GRP_flux * 1.638483E-21 * unit
+        G_flux = G_flux * 1.346109e-21 
+        GBP_flux = GBP_flux * 3.009167E-21
+        GRP_flux = GRP_flux * 1.638483E-21 
+        gaia_flux = np.array([GBP_flux, G_flux, GRP_flux]) * unit
 
         unit = 1 * u.arcsec
-        gaia_flux = np.array([GBP_flux, G_flux, GRP_flux])
+        return gaia_flux.to(u.watt / u.m**2 / u.nm), gaia_parallax * unit
+
     else:
         raise ValueError('No Gaia ID found')
 
-    return gaia_flux, gaia_parallax * unit
+
+ #%%  Simple test
+# gaia_values('55 Cnc')
