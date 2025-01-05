@@ -1,6 +1,5 @@
 # %% Imports
 
-from get_flux_values import *
 from scipy.interpolate import LinearNDInterpolator
 import pysynphot as S
 import numpy as np
@@ -118,4 +117,6 @@ Teff = 5581
 mettalicity = 0.33
 log_g = 4.33
 Ebv = 0.3 
-SED_flux_bands(Teff, mettalicity, log_g, Ebv)
+#SED_flux_bands(Teff, mettalicity, log_g, Ebv)
+
+
