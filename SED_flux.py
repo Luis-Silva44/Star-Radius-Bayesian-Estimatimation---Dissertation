@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import astropy.units as u
 from uncertainties import ufloat
-from flux_extinction import flux_extinction
+from extinction import apply, ccm89
 
 # %% Function that creates 8 SED using Kurucz and Castelli models for a cube of parameters
 def create_SEDs(Teff_vals, mettalicity_vals, logg_vals):
@@ -77,6 +77,10 @@ def SED_interpolator(Teff,mettalicity,logg):
     return SED_wavelen, model_flux_Jy
 
 # %% Function that applies extinction to the SED 
+def flux_extinction(wavelen, flux, Ebv):
+    flux_ext = apply(ccm89(wavelen.to(u.angstrom), Ebv*3.1, 3.1), flux)
+    return flux_ext
+
 def SED_attenuated(Teff, mettalicity, logg, Ebv):
     wavelen, flux = SED_interpolator(Teff,mettalicity,logg)
     wavelen = wavelen.astype(np.float64)
@@ -97,7 +101,7 @@ def find_nearest_index(array, value):
         return index
 
 # %% Create a list of SED flux values with the size and wavelengths of the filter list
-def SED_flux_bands(Teff, mettalicity, log_g, Ebv, unit):
+def SED_flux_bands(Teff, mettalicity, log_g, Ebv):
     SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, mettalicity, log_g, Ebv)
     wavelen = band_wavelen()
     nearest_index = []
@@ -109,9 +113,9 @@ def SED_flux_bands(Teff, mettalicity, log_g, Ebv, unit):
     return wavelen, model_flux_values_Jy
 
 # %%  Testing the function
-#"star_name = 1019003226022657920
-#Teff = 5581 
-#mettalicity = 0.33
-#log_g = 4.33
-#Ebv = 0.3 
-#SED_flux_bands(Teff, mettalicity, log_g, Ebv)
+star_name = 1019003226022657920
+Teff = 5581 
+mettalicity = 0.33
+log_g = 4.33
+Ebv = 0.3 
+SED_flux_bands(Teff, mettalicity, log_g, Ebv)
