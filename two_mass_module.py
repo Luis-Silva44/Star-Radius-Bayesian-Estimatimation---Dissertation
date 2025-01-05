@@ -5,6 +5,7 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astroquery.vizier import Vizier
 from uncertainties import ufloat
+import numpy as np
 
  # %% 
 
