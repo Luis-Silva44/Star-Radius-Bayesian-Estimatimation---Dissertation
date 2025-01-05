@@ -1,16 +1,16 @@
 #%% 
-import astropy.units as u
-from astroquery.vizier import Vizier
-import numpy as np
-from uncertainties import ufloat
-import matplotlib.pyplot as plt
-from astroquery.simbad import Simbad
+#import astropy.units as u
+#from astroquery.vizier import Vizier
+#import numpy as np
+#from uncertainties import ufloat
+#import matplotlib.pyplot as plt
+#from astroquery.simbad import Simbad
 
  
 
 #STILL NEEDED: REMOVE WARNING FROM COORDINATES
 # %% 
-
+'''
 def flux_unit_change(value,unit):
     if unit == 'Jy':
         return value.to(u.Jy)
@@ -135,5 +135,6 @@ def get_flux_values(star_name):
     return filter_wavelen, flux_values_Jy
 
 # %% 
-#wavelen, flux = get_flux_values(1019003226022657920)
-#flux
+wavelen, flux = get_flux_values(1019003226022657920)
+flux
+'''
