@@ -77,7 +77,7 @@ def SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, unit):
 
     return minimization_radius, minimization_result
 
-# %% 
+# %% Test cell
 
 star_name = 'WASP-84'	
 Teff = 5221 
@@ -87,7 +87,7 @@ table_value = (0.828 * R_sun).to(R_sun)
 Ebv = 0.020
 #distance = 100.4
 
-radius, _ = SED_fitting(star_name, Teff, mettalicity, logg, Ebv, 'Jy')
-error = abs(radius - table_value) / table_value * 100
-print(radius,error)
+#radius, _ = SED_fitting(star_name, Teff, mettalicity, logg, Ebv, 'Jy')
+#error = abs(radius - table_value) / table_value * 100
+#print(radius,error)
 # %%
