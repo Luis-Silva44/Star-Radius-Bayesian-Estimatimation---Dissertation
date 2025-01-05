@@ -57,11 +57,10 @@ def gaia_values(star_name):
         gaia_flux = np.array([GBP_flux, G_flux, GRP_flux]) * unit
 
         unit = 1 * u.arcsec
-        return gaia_flux.to(u.watt / u.m**2 / u.nm), gaia_parallax * unit
+        return gaia_flux.to(u.watt / u.um / u.cm**2), gaia_parallax * unit
 
     else:
         raise ValueError('No Gaia ID found')
 
 
  #%%  Simple test
-# gaia_values('55 Cnc')
