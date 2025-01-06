@@ -1,11 +1,11 @@
 # %% 
-from gaia_module import retrieve_gaia_id
-from two_mass_module import mag_to_flux, vizier_coords
 import numpy as np
 import astropy.units as u
 from astroquery.vizier import Vizier
 from astropy.coordinates import SkyCoord
 from uncertainties import ufloat
+
+from auxiliary_functions import * 
 
 # %% 
 # Function to get the photometry values and errors and turn them into fluxes
@@ -33,3 +33,7 @@ def wise_values(star_name):
         return wise_flux
     else:
         raise ValueError('No WISE data found')
+    
+# %%
+
+#wise_values('55 Cnc')
