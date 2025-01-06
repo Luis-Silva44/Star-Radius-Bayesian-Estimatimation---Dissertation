@@ -2,8 +2,8 @@
 
 import numpy as np
 import astropy.units as u
-import astroquery.simbad as Simbad
-import astroquery.vizier as Vizier
+from astroquery.simbad import Simbad
+from astroquery.vizier import Vizier
 from astropy.coordinates import SkyCoord
 # %%
 def flux_unit_change(value,unit):
@@ -74,4 +74,3 @@ def find_nearest_index(array, value):
         return index
 
 # %% 
-
