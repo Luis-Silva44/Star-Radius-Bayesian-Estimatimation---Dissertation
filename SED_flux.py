@@ -1,4 +1,5 @@
 # %% Imports
+from auxiliary_functions import * 
 
 from scipy.interpolate import LinearNDInterpolator
 import pysynphot as S
@@ -86,19 +87,6 @@ def SED_attenuated(Teff, mettalicity, logg, Ebv):
     flux_attenuated = flux_extinction(wavelen, flux, Ebv)
     return wavelen, flux_attenuated
 
-# %% Function to get the wavelength of the peak of transmission of each band
-def band_wavelen():
-    filter_bands = {'GBP':0.532, 'G': 0.673, 'GRP':0.797, 
-                    'J':1.25, 'H':1.65, 'K':2.15,
-                    'W1':3.4, 'W2':4.6, 'W3':12, 'W4':22}
-
-    wavelen = np.array([d for d in filter_bands.values()]) * u.um
-    return wavelen 
-# %% Simple function to get the closest index to a certain value. Used to get the closest wavelengths in the models
-def find_nearest_index(array, value):
-        index = (np.abs(array - value)).argmin()
-        return index
-
 # %% Create a list of SED flux values with the size and wavelengths of the filter list
 def SED_flux_bands(Teff, mettalicity, log_g, Ebv):
     SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, mettalicity, log_g, Ebv)
@@ -117,6 +105,6 @@ Teff = 5581
 mettalicity = 0.33
 log_g = 4.33
 Ebv = 0.3 
-#SED_flux_bands(Teff, mettalicity, log_g, Ebv)
+SED_flux_bands(Teff, mettalicity, log_g, Ebv)
 
 
