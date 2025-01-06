@@ -1,5 +1,5 @@
 #%%
-from get_flux_values import * 
+'''from get_flux_values import * 
 from SED_fitting import * 
 import pandas as pd
 import uncertainties.umath as umath
@@ -205,6 +205,7 @@ def SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, distance, table_value,
 
     if show_plot == 'yes':
         minimization_flux = model_flux_values * minimization_radius **2 / distance.to(R_sun) ** 2
+        
         plt.title('Fitting the modeled flux to the values of observed flux (extinction fixed)')
         plt.xlabel('Wavelength (μm)')
         plt.ylabel('Flux')
@@ -272,9 +273,12 @@ log_g = 4.44
 distance = 27.9
 table_value = 0.805
 Ebv = 0.024
+table_extinction = 0.010
 
 minimization_radius,result = SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, distance, table_value, 'SI', 'yes')
 
 # %% 
 minimization_radius,result = SED_fitting_extinction(star_name, Teff, mettalicity, log_g, distance, table_value, 'SI', 'yes')
 print('Extinction is',result.x[1])
+print('Table value of extinction:', table_extinction)
+print('Error in extinction value:',abs(result.x[1] - table_extinction) / table_extinction * 100)'''
