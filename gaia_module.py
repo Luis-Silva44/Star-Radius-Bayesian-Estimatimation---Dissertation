@@ -2,38 +2,9 @@
 import astropy.units as u
 import numpy as np
 from astroquery.vizier import Vizier
-from astroquery.simbad import Simbad
 from uncertainties import ufloat
-from SED_flux import band_wavelen
 
-# Function that allows easy unit changes in the programm. Easy to adapt or add new unit systems
-def flux_unit_change(value,unit):
-    if unit == 'Jy':
-        return value.to(u.Jy)
-    
-    elif unit == 'cgs':
-        cgs_flux_units =  u.erg / u.cm**2 / u.s / u.Hz
-        return value.to(cgs_flux_units)
-    
-    elif unit == 'SI':
-        SI_flux_units = u.watt / u.m**2 / u.Hz
-        return value.to(SI_flux_units)
-    
-    else:
-        raise ValueError('Unit not recognized by programm')
-    
-# %% 
-# Function that allows the programm to either look for star name or gaia id. Only requirement 
-# is that gaia_id is an int, and the name a string
-def retrieve_gaia_id(star_name):
-    if type(star_name) == int:
-        gaia_id = star_name
-    elif type(star_name) == str:
-        result_table = Simbad.query_objectids(star_name)
-        for x in result_table:
-            if 'Gaia DR3' in x['ID']:
-                gaia_id = str(x['ID']).replace('Gaia DR3 ', '')
-    return gaia_id
+from auxiliary_functions import *
 
 # %% 
 # Function to search the gaia data release 3 and give us the values of flux, flux errors and parallax
@@ -64,3 +35,5 @@ def gaia_values(star_name):
 
 
  #%%  Simple test
+
+gaia_values('55 Cnc')
