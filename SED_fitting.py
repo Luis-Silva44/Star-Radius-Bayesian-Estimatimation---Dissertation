@@ -9,25 +9,8 @@ import astropy.units as u
 from astropy.constants import R_sun
 import numpy as np
 from scipy.optimize import minimize
-# %% Function that allows easy unit change
 
-def flux_unit_change(value,unit):
-    if unit == 'Jy':
-        return value.to(u.Jy)
-    
-    elif unit == 'cgs':
-        cgs_flux_units =  u.erg / u.cm**2 / u.s / u.Hz
-        return value.to(cgs_flux_units)
-    
-    elif unit == 'SI':
-        SI_flux_units = u.watt / u.m**2 / u.Hz
-        return value.to(SI_flux_units)
-    
-    else:
-        raise ValueError('Unit not recognized by programm')
-    
-# %% 
-
+    # %% 
 def get_flux_values(star_name):
     gaia_flux, _ = gaia_values(star_name)
     two_mass_flux = two_mass_values(star_name)
