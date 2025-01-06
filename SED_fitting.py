@@ -1,4 +1,5 @@
 # %% Imports
+from auxiliary_functions import *
 from gaia_module import gaia_values
 from wise_module import * 
 from two_mass_module import * 
@@ -10,7 +11,7 @@ from astropy.constants import R_sun
 import numpy as np
 from scipy.optimize import minimize
 
-    # %% 
+# %% 
 def get_flux_values(star_name):
     gaia_flux, _ = gaia_values(star_name)
     two_mass_flux = two_mass_values(star_name)
@@ -70,7 +71,9 @@ table_value = (0.828 * R_sun).to(R_sun)
 Ebv = 0.020
 #distance = 100.4
 
-#radius, _ = SED_fitting(star_name, Teff, mettalicity, logg, Ebv, 'Jy')
-#error = abs(radius - table_value) / table_value * 100
-#print(radius,error)
+radius, _ = SED_fitting(star_name, Teff, mettalicity, logg, Ebv, 'Jy')
+error = abs(radius - table_value) / table_value * 100
+print('Computed radius is:', radius)
+print('Table value of radius:', table_value)
+print('Error:', error, '%')
 # %%
