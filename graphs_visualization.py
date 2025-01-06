@@ -1,6 +1,7 @@
 # %%
 from SED_fitting import * 
-from SED_flux import band_wavelen
+from auxiliary_functions import * 
+
 import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
