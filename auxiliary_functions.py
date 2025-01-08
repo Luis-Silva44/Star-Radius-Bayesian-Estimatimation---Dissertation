@@ -74,3 +74,43 @@ def find_nearest_index(array, value):
         return index
 
 # %% 
+def star_set_mean_tester(star_list, unit):
+    time_start = time.time()
+
+    problem_stars = []
+    computed_radius = []
+    table_value_radius = []
+
+    for i in range(len(star_list)):
+        star_name = star_list['Star'][i]
+        Teff = star_list['Teff'][i]
+        mettalicity = star_list['Fe/H'][i]
+        log_g = star_list['logg'][i]
+        Ebv = float(star_list['E(B-V)'][i])
+        table_value = star_list['Radius'][i]
+
+        table_value = table_value * R_sun
+        table_value = table_value.to(R_sun)
+
+        print('Star being tested:', star_name)
+
+        try:
+            radius, _ = SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, unit)
+            computed_radius.append(radius)
+            table_value_radius.append(table_value)
+                
+            print('Value of radius computed:', radius)
+            print('Table value of radius:', table_value)
+            print('Error in value computed:', abs(table_value - radius) / table_value * 100)
+            print('--------')
+
+        except Exception as e:
+            problem_stars.append(star_name)
+            print('Issue with star', star_name)
+            print('--------')
+
+    time_end = time.time()
+    print('Program took', time_end - time_start, 'seconds to run for', len(star_list),'stars')
+    print(len(problem_stars), 'stars had issues with computing radius')
+
+    return problem_stars, computed_radius, table_value_radius
