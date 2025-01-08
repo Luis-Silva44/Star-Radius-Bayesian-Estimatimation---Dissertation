@@ -1,5 +1,4 @@
 # %%
-from SED_fitting import * 
 from auxiliary_functions import * 
 
 import matplotlib.pyplot as plt
@@ -67,6 +66,16 @@ def create_dataframe(photometry_flux, SED_flux, distance):
 #photometry_flux = get_flux_values(star_name)
 #wavelen, SED_flux = SED_flux_bands(Teff, mettalicity, logg, Ebv)
 #create_dataframe(photometry_flux, SED_flux, distance)
+
 # %%
 
-
+def computed_real_comparison(computed_radius, table_radius):
+    fig, axs = plt.subplots()
+    axs.plot(table_radius, computed_radius, 'o')
+    axs.axline((0.60,0.60), slope=1, color='black', linestyle='--')
+    axs.set_title('Comparison beween computed radius and table radius')
+    axs.set_xlabel('Expected values of star radii')
+    axs.set_ylabel('Computed values of star radii')
+    axs.set_xlim(0.6)
+    axs.grid()
+    plt.show()
