@@ -10,6 +10,7 @@ import astropy.units as u
 from astropy.constants import R_sun
 import numpy as np
 from scipy.optimize import minimize
+import time
 
 # %% 
 def get_flux_values(star_name):
@@ -69,11 +70,23 @@ logg = 4.28
 mettalicity = 0.05
 table_value = (0.828 * R_sun).to(R_sun)
 Ebv = 0.020
-#distance = 100.4
 
-radius, _ = SED_fitting(star_name, Teff, mettalicity, logg, Ebv, 'Jy')
-error = abs(radius - table_value) / table_value * 100
-print('Computed radius is:', radius)
-print('Table value of radius:', table_value)
-print('Error:', error, '%')
-# %%
+#radius, _ = SED_fitting(star_name, Teff, mettalicity, logg, Ebv, 'Jy')
+#error = abs(radius - table_value) / table_value * 100
+#print('Computed radius is:', radius)
+#print('Table value of radius:', table_value)
+#print('Error:', error, '%')
+
+# %% 
+
+star_data = pd.read_csv('~/tese/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
+star_test_subset = star_data.head()
+
+# Uncomment to run for list of stars (approx. 45 seconds)
+# problem_list, computed_list, table_list = star_set_mean_tester(star_data, 'SI')
+
+# %% 
+computed_radii = np.array([i.value for i in computed_list])
+table_values = np.array([i.value for i in table_list])
+
+computed_real_comparison(computed_radii, table_values)
