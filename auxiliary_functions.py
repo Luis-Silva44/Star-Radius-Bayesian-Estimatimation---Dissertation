@@ -5,6 +5,7 @@ import astropy.units as u
 from astroquery.simbad import Simbad
 from astroquery.vizier import Vizier
 from astropy.coordinates import SkyCoord
+from astropy.constants import R_sun
 # %%
 def flux_unit_change(value,unit):
     if unit == 'Jy':
@@ -33,14 +34,18 @@ def retrieve_gaia_id(star_name):
     return gaia_id
 
 # %%
-def band_wavelen():
+def band_wavelen(filter_check):
     filter_bands = {'GBP':0.532, 'G': 0.673, 'GRP':0.797, 
                     'J':1.25, 'H':1.65, 'K':2.15,
                     'W1':3.4, 'W2':4.6, 'W3':12, 'W4':22}
 
-    wavelen = np.array([d for d in filter_bands.values()]) * u.um
-    return wavelen
+    if filter_check is None:
+        selected_bands = filter_bands
+    elif isinstance(filter_check, list):
+        selected_bands = {k: v for k, v in filter_bands.items() if k in filter_check}
 
+    wavelen = np.array([d for d in selected_bands.values()]) * u.um
+    return wavelen
 # %%
 def mag_to_flux(mag,band): # in W cm-2 micrometer-1
     flux_zero_points =  {'J':3.1293e-13,
@@ -72,45 +77,3 @@ def vizier_coords(star_name):
 def find_nearest_index(array, value):
         index = (np.abs(array - value)).argmin()
         return index
-
-# %% 
-def star_set_mean_tester(star_list, unit):
-    time_start = time.time()
-
-    problem_stars = []
-    computed_radius = []
-    table_value_radius = []
-
-    for i in range(len(star_list)):
-        star_name = star_list['Star'][i]
-        Teff = star_list['Teff'][i]
-        mettalicity = star_list['Fe/H'][i]
-        log_g = star_list['logg'][i]
-        Ebv = float(star_list['E(B-V)'][i])
-        table_value = star_list['Radius'][i]
-
-        table_value = table_value * R_sun
-        table_value = table_value.to(R_sun)
-
-        print('Star being tested:', star_name)
-
-        try:
-            radius, _ = SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, unit)
-            computed_radius.append(radius)
-            table_value_radius.append(table_value)
-                
-            print('Value of radius computed:', radius)
-            print('Table value of radius:', table_value)
-            print('Error in value computed:', abs(table_value - radius) / table_value * 100)
-            print('--------')
-
-        except Exception as e:
-            problem_stars.append(star_name)
-            print('Issue with star', star_name)
-            print('--------')
-
-    time_end = time.time()
-    print('Program took', time_end - time_start, 'seconds to run for', len(star_list),'stars')
-    print(len(problem_stars), 'stars had issues with computing radius')
-
-    return problem_stars, computed_radius, table_value_radius
