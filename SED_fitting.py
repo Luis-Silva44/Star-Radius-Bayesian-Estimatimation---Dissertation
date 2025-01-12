@@ -119,16 +119,16 @@ star_data = pd.read_csv('~/tese/testdata/list_stars.txt', sep="\t", header=0, sk
 star_test_subset = star_data.head()
 
 # Uncomment to run for list of stars (approx. 45 seconds)
-problem_list, computed_list, table_list = star_set_tester(star_data, 'SI')
+#problem_list, computed_list, table_list = star_set_tester(star_data, 'SI')
 
 # %% 
-computed_radii = np.array([i.value for i in computed_list])
-table_values = np.array([i.value for i in table_list])
+#computed_radii = np.array([i.value for i in computed_list])
+#table_values = np.array([i.value for i in table_list])
 
-computed_real_comparison(computed_radii, table_values)
+#computed_real_comparison(computed_radii, table_values)
 
 # %%
-print(problem_list)
+#print(problem_list)
 
 '''['GJ176', # temperature too low, outside of model range
  'TIC209464063', # two mass module finds wrong star; nan values in uncertainties of two mass bands
