@@ -9,8 +9,7 @@ from uncertainties import umath
 import pandas as pd
 # %%
 
-def SED_fitting_plot(SED_wavelen, SED_flux, photometry_flux_values, photometry_flux_unc, minimization_radius, distance):
-    wavelen = band_wavelen()
+def SED_fitting_plot(SED_wavelen, SED_flux, filter_wavelen, photometry_flux_values, photometry_flux_unc, minimization_radius, distance):
     minimization_flux = SED_flux * minimization_radius **2 / distance.to(R_sun) ** 2
     minimization_flux = np.array([flux.value.nominal_value for flux in minimization_flux])
 
@@ -18,16 +17,14 @@ def SED_fitting_plot(SED_wavelen, SED_flux, photometry_flux_values, photometry_f
     plt.xlabel('Wavelength (μm)')
     plt.ylabel(f'Flux ({SED_flux.unit})')
     plt.plot(SED_wavelen, minimization_flux)
-    plt.errorbar(wavelen, photometry_flux_values, yerr = photometry_flux_unc, fmt='o')
+    plt.errorbar(filter_wavelen, photometry_flux_values, yerr = photometry_flux_unc, fmt='o')
     plt.xlim(0,23)
     plt.grid()
     plt.legend(['Model flux','Observed flux'])
     plt.show()
 
 # %% 
-def create_dataframe(photometry_flux, SED_flux, distance):
-    wavelen = band_wavelen()
-    
+def create_dataframe(filter_wavelen, photometry_flux, SED_flux, distance):
     angular_diameter = []
     for i in range(len(photometry_flux)):
         ang_diam = 2 * umath.sqrt(photometry_flux[i].value / SED_flux[i].value)
@@ -39,13 +36,13 @@ def create_dataframe(photometry_flux, SED_flux, distance):
     stellar_radius = distance.to(R_sun) * angular_diameter.value / 2 #THIS IS SINE OF A VERY SMALL ANGLE
     
     flux_table = pd.DataFrame({
-    'Filter Wavelength': wavelen,
+    'Filter Wavelength': filter_wavelen,
     'Observed flux': photometry_flux,
     'Surface flux (model)': SED_flux,
     'Angular Diameter': angular_diameter,
     'Stellar radius': stellar_radius})
 
-    column_units = {'Filter Wavelength': wavelen.unit,
+    column_units = {'Filter Wavelength': filter_wavelen.unit,
                     'Observed flux': photometry_flux.unit,
                     'Surface flux (model)': SED_flux.unit,
                     'Angular Diameter': angular_diameter.unit,
