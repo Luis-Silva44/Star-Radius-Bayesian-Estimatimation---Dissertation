@@ -27,8 +27,10 @@ def gaia_values(star_name):
         GRP_flux = GRP_flux * 1.638483E-21 
         gaia_flux = np.array([GBP_flux, G_flux, GRP_flux]) * unit
 
+        gaia_check = ['GBP', 'G', 'GRP']
+
         unit = 1 * u.mas
-        return gaia_flux.to(u.watt / u.um / u.cm**2), (gaia_parallax * unit).to(u.arcsec)
+        return gaia_flux.to(u.watt / u.um / u.cm**2), (gaia_parallax * unit).to(u.arcsec), gaia_check
 
     else:
         raise ValueError('No Gaia ID found')
