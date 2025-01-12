@@ -10,7 +10,7 @@ from auxiliary_functions import *
 
 # Function to get the photometry values and errors and turn them into fluxes
 def two_mass_values(star_name):
-    gaia_id = retrieve_gaia_id(star_name)
+    Vizier.ROW_LIMIT = 1
     two_mass_catalog = 'II/246/out'
     ra, dec = vizier_coords(star_name)
     coords = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='icrs')
@@ -28,10 +28,14 @@ def two_mass_values(star_name):
 
         unit = 1 * u.watt / u.um / u.cm**2
         two_mass_flux = np.array([J_flux, H_flux, K_flux]) * unit
+        two_mass_check = ['J', 'H', 'K']
 
-        return two_mass_flux
     else: 
-        raise ValueError('No 2MASS data found')
+        unit = 1 * u.watt / u.um / u.cm**2
+        two_mass_flux = [] * unit
+        two_mass_check = []
+        print('No 2MASS data found')
     
+    return two_mass_flux, two_mass_check
 # %%
-two_mass_values('55 Cnc')
+two_mass_values('WASP-8')
