@@ -4,11 +4,11 @@ from gaia_module import *
 from auxiliary_functions import * 
 # %%
 def get_flux(star_name, Teff, mettalicity, log_g, Ebv, unit):
-    _, parallax = gaia_values(star_name)
+    _, parallax, _= gaia_values(star_name)
     unit_change = 1 * u.parsec
     distance = (1 / parallax.value) * unit_change
-    photometry_flux_Jy = get_flux_values(star_name)
-    wavelen, SED_flux_Jy = SED_flux_bands(Teff, mettalicity, log_g, Ebv)
+    filter_wavelen, photometry_flux_Jy = get_flux_values(star_name)
+    wavelen, SED_flux_Jy = SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
     
     photometry_flux = flux_unit_change(photometry_flux_Jy, unit)
     SED_flux = flux_unit_change(SED_flux_Jy, unit)
@@ -26,14 +26,14 @@ def get_flux(star_name, Teff, mettalicity, log_g, Ebv, unit):
     return photometry_flux_vals, photometry_flux_unc, SED_flux.value, distance.value.nominal_value
 # %%
 
-star_name = 'WASP-84'	
-Teff = 5221 
-logg = 4.28
-mettalicity = 0.05
-table_value = (0.828 * R_sun).to(R_sun)
-Ebv = 0.020
+star_name = '55 Cnc'	
+Teff = 5353
+logg = 4.3
+mettalicity = 0.3
+table_value = (0.941 * R_sun).to(R_sun)
+Ebv = 0.043
 
-#photometry_flux_vals, photometry_flux_unc, SED_flux,distance = get_flux(star_name, Teff, mettalicity, log_g, Ebv, 'Jy')
+photometry_flux_vals, photometry_flux_unc, SED_flux,distance = get_flux(star_name, Teff, mettalicity, log_g, Ebv, 'Jy')
 # %%
 
 import numpy as np
@@ -96,3 +96,13 @@ if __name__ == "__main__":
     plt.legend()
     plt.grid()
     plt.show()
+# %% 
+
+def likelihood(radius, photometry_flux_vals, photometry_flux_unc, SED_flux, distance):
+    if radius <= 0:
+        return 0.0 
+    
+    scaled_SED_flux = SED_flux * (radius**2 / distance**2)
+    chi_squared = np.sum(((photometry_flux_vals - scaled_SED_flux) / photometry_flux_unc) ** 2)
+    likelihood_value = -0.5 * chi_squared
+    return log_likelihood_value
