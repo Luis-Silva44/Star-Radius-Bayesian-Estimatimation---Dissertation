@@ -11,18 +11,18 @@ from auxiliary_functions import *
 # %% 
 # Function to get the photometry values and errors and turn them into fluxes
 def wise_values(star_name):
-    Vizier.ROW_LIMIT = 1
+    Vizier.ROW_LIMIT = -1
     wise_catalog = 'II/311/wise'
     ra, dec = vizier_coords(star_name)
     coords = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='icrs')
-    wise_data = Vizier.query_region(coords, radius=15* u.arcsec , catalog=wise_catalog)
-    
-    if wise_data:
-        W1_mag = ufloat(wise_data[0]['W1mag'], wise_data[0]['e_W1mag'])
-        W2_mag = ufloat(wise_data[0]['W2mag'], wise_data[0]['e_W2mag'])
-        W3_mag = ufloat(wise_data[0]['W3mag'], wise_data[0]['e_W3mag'])
-        W4_mag = ufloat(wise_data[0]['W4mag'], wise_data[0]['e_W4mag'])
+    wise_data = Vizier.query_region(coords, radius=10* u.arcsec , catalog=wise_catalog)
 
+    if wise_data:
+        W1_mag = ufloat(wise_data[0][0]['W1mag'], wise_data[0][0]['e_W1mag'])
+        W2_mag = ufloat(wise_data[0][0]['W2mag'], wise_data[0][0]['e_W2mag'])
+        W3_mag = ufloat(wise_data[0][0]['W3mag'], wise_data[0][0]['e_W3mag'])
+        W4_mag = ufloat(wise_data[0][0]['W4mag'], wise_data[0][0]['e_W4mag'])
+        print(W1_mag)
         W1_flux = mag_to_flux(W1_mag,'W1')
         W2_flux= mag_to_flux(W2_mag,'W2')
         W3_flux= mag_to_flux(W3_mag,'W3')
@@ -45,7 +45,3 @@ def wise_values(star_name):
         print('No WISE data found')
     
     return wise_flux, wise_check
-# %%
-
-wise_values('WASP-8')
-
