@@ -9,7 +9,7 @@ from auxiliary_functions import *
 # %% 
 # Function to search the gaia data release 3 and give us the values of flux, flux errors and parallax
 def gaia_values(star_name):
-    gaia_id = retrieve_gaia_id(star_name)
+    gaia_id, star_name = retrieve_gaia_id(star_name)
     gaia_catalog = "I/355/gaiadr3"  # Gaia DR3 catalog
     gaia_data = Vizier.query_constraints(catalog=gaia_catalog, Source=str(gaia_id))
 
@@ -37,5 +37,3 @@ def gaia_values(star_name):
 
 
  #%%  Simple test
-
-gaia_values('55 Cnc')
