@@ -6,6 +6,7 @@ from astroquery.simbad import Simbad
 from astroquery.vizier import Vizier
 from astropy.coordinates import SkyCoord
 from astropy.constants import R_sun
+import pandas as pd
 # %%
 def flux_unit_change(value,unit):
     if unit == 'Jy':
@@ -23,15 +24,23 @@ def flux_unit_change(value,unit):
         raise ValueError('Unit not recognized by programm')
     
 # %% 
+url="https://exofop.ipac.caltech.edu/tess/download_toi.php?sort=toi&output=pipe"
+TOI_df=pd.read_csv(url, delimiter='|', index_col=1)
+# %% 
 def retrieve_gaia_id(star_name):
     if type(star_name) == int:
         gaia_id = star_name
     elif type(star_name) == str:
         result_table = Simbad.query_objectids(star_name)
+        if result_table == None and 'TOI' in star_name:
+            star_name = float(star_name.replace('TOI-', '') + '.01')
+            star_name = 'TIC ' + str(TOI_df.loc[star_name][0])
+            result_table = Simbad.query_objectids(star_name)
+
         for x in result_table:
             if 'Gaia DR3' in x['ID']:
                 gaia_id = str(x['ID']).replace('Gaia DR3 ', '')
-    return gaia_id
+    return gaia_id, star_name
 
 # %%
 def band_wavelen(filter_check):
@@ -64,7 +73,7 @@ def mag_to_flux(mag,band): # in W cm-2 micrometer-1
 
 # %% 
 def vizier_coords(star_name):
-    gaia_id = retrieve_gaia_id(star_name)
+    gaia_id, star_name = retrieve_gaia_id(star_name)
     gaia_catalog = "I/355/gaiadr3"  # Gaia DR3 catalog
     gaia_values = Vizier.query_constraints(catalog=gaia_catalog, Source=str(gaia_id))
     
