@@ -124,27 +124,26 @@ star_test_subset = star_data.head()
 # %% 
 #computed_radii = np.array([i.value for i in computed_list])
 #table_values = np.array([i.value for i in table_list])
-
 #computed_real_comparison(computed_radii, table_values)
 
 # %%
 #print(problem_list)
 
 '''['GJ176', # temperature too low, outside of model range
- 'TIC209464063', # two mass module finds wrong star; nan values in uncertainties of two mass bands
- 'TOI-1797', # two mass module finds wrong star; nan values in uncertainties of two mass bands
- 'TOI-2350', # no simbad entry, need to adapt for inputation of direct coordinates
- 'TOI-4629', # no simbad entry, need to adapt for inputation of direct coordinates
- 'TOI-5493', # no simbad entry, need to adapt for inputation of direct coordinates
- 'TOI-5696', # no simbad entry, need to adapt for inputation of direct coordinates
- 'WASP-8'] # programm is finding the wrong star in vizier search
 ''' 
+
+'''
+Star that simbad value of J doesn't match: ~
+55 Cnc
+HD 136352
+HD 219134
+HD128582
+'''
 # %% 
-star_name = 'TOI-815'
-Teff = 4869
-logg = 4.51
-mettalicity = -0.09
-table_value = (0.77 * R_sun).to(R_sun)
-Ebv = 0.015
+star_name = 'HD 209458'
+Teff = 5353
+logg = 4.3
+mettalicity = 0.3
+table_value = (0.941 * R_sun).to(R_sun)
+Ebv = 0.043
 #single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
-# %%
