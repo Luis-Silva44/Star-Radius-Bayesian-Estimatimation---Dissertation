@@ -26,14 +26,14 @@ def get_flux(star_name, Teff, mettalicity, log_g, Ebv, unit):
     return photometry_flux_vals, photometry_flux_unc, SED_flux.value, distance.value.nominal_value
 # %%
 
-star_name = '55 Cnc'	
-Teff = 5353
-logg = 4.3
-mettalicity = 0.3
-table_value = (0.941 * R_sun).to(R_sun)
-Ebv = 0.043
+star_name = 'DE Boo'	
+Teff = 5289
+logg = 4.27
+mettalicity = 0.03
+table_value = (0.863 * R_sun).to(R_sun)
+Ebv = 0.04
 
-photometry_flux_vals, photometry_flux_unc, SED_flux,distance = get_flux(star_name, Teff, mettalicity, log_g, Ebv, 'Jy')
+#photometry_flux_vals, photometry_flux_unc, SED_flux,distance = get_flux(star_name, Teff, mettalicity, log_g, Ebv, 'Jy')
 # %%
 
 import numpy as np
@@ -69,7 +69,6 @@ def log_posterior(radius, photometry_flux_vals, photometry_flux_unc, SED_flux, d
 
 def run_mcmc(photometry_flux_vals, photometry_flux_unc, SED_flux, distance, n_walkers=32, n_steps=5000):
 
-    # Initial guess for radius
     initial_radius = 1.0  
     initial_positions = initial_radius + 0.1 * np.random.randn(n_walkers, 1) 
     sampler = emcee.EnsembleSampler(
@@ -82,27 +81,17 @@ def run_mcmc(photometry_flux_vals, photometry_flux_unc, SED_flux, distance, n_wa
     samples = sampler.get_chain(flat=True)
     return samples
 
-if __name__ == "__main__":
-    photometry_flux_vals, photometry_flux_unc, SED_flux, distance = get_flux(star_name, Teff, mettalicity, log_g, Ebv, 'Jy')
 
-    samples = run_mcmc(photometry_flux_vals, photometry_flux_unc, SED_flux, distance)
-    radius_median = np.median(samples)
-    print(f"Stellar Radius: {radius_median:.2f} R_sun")
+photometry_flux_vals, photometry_flux_unc, SED_flux, distance = get_flux(star_name, Teff, mettalicity, log_g, Ebv, 'Jy')
 
-    plt.hist(samples, bins=50, density=True, alpha=0.7, color="blue")
-    plt.xlabel("Stellar Radius (R_sun)")
-    plt.ylabel("Probability Density")
-    plt.title("Posterior Distribution of Stellar Radius")
-    plt.legend()
-    plt.grid()
-    plt.show()
-# %% 
+samples = run_mcmc(photometry_flux_vals, photometry_flux_unc, SED_flux, distance)
+radius_median = np.median(samples)
+print('Stellar Radius:', radius_median, 'R_sun')
 
-def likelihood(radius, photometry_flux_vals, photometry_flux_unc, SED_flux, distance):
-    if radius <= 0:
-        return 0.0 
-    
-    scaled_SED_flux = SED_flux * (radius**2 / distance**2)
-    chi_squared = np.sum(((photometry_flux_vals - scaled_SED_flux) / photometry_flux_unc) ** 2)
-    likelihood_value = -0.5 * chi_squared
-    return log_likelihood_value
+plt.hist(samples, bins=50, density=True, alpha=0.7, color="blue")
+plt.xlabel("Stellar Radius (R_sun)")
+plt.ylabel("Probability Density")
+plt.title("Posterior Distribution of Stellar Radius")
+plt.legend()
+plt.grid()
+plt.show()
