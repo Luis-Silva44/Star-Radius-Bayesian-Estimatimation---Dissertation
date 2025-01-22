@@ -10,18 +10,24 @@ from auxiliary_functions import *
 
 # Function to get the photometry values and errors and turn them into fluxes
 def two_mass_values(star_name):
-    Vizier.ROW_LIMIT = 1
-    two_mass_catalog = 'II/246/out'
-    ra, dec = vizier_coords(star_name)
-    coords = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg), frame='icrs')
+    Vizier.ROW_LIMIT = -1
+    gaia_id, star_name = retrieve_gaia_id(star_name)
+    gaia_catalog = "I/355/gaiadr3"
+    gaia_data = Vizier.query_constraints(catalog=gaia_catalog, Source=str(gaia_id))
+    two_mass_iden = str(gaia_data[0]['_2MASS'][0])
+    res = Vizier.query_object(star_name, catalog='II/246/out')
 
-    two_mass_data = Vizier.query_region(coords, radius=10*u.arcsec, catalog=two_mass_catalog)
-    
+    flag = 0
+    for i in res[0]:
+        if i['_2MASS'] == two_mass_iden: 
+            break 
+        flag += 1
+
+    two_mass_data = res[0][flag]
     if two_mass_data:
-        J_mag = ufloat(two_mass_data[0]['Jmag'], two_mass_data[0]['e_Jmag'])
-        H_mag = ufloat(two_mass_data[0]['Hmag'], two_mass_data[0]['e_Hmag'])
-        K_mag = ufloat(two_mass_data[0]['Kmag'], two_mass_data[0]['e_Kmag'])
-
+        J_mag = ufloat(two_mass_data['Jmag'], two_mass_data['e_Jmag'])
+        H_mag = ufloat(two_mass_data['Hmag'], two_mass_data['e_Hmag'])
+        K_mag = ufloat(two_mass_data['Kmag'], two_mass_data['e_Kmag'])
         J_flux = mag_to_flux(J_mag,'J')
         H_flux = mag_to_flux(H_mag,'H')
         K_flux = mag_to_flux(K_mag,'K')
@@ -37,5 +43,6 @@ def two_mass_values(star_name):
         print('No 2MASS data found')
     
     return two_mass_flux, two_mass_check
-# %%
-two_mass_values('WASP-8')
+# %% 
+
+#two_mass_values('TOI-5696')
