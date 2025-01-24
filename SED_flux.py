@@ -99,10 +99,10 @@ def SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv):
     return filter_wavelen, model_flux_values_Jy
 
 # %%  Testing the function
-star_name = 1019003226022657920
+'''star_name = 1019003226022657920
 Teff = 5581 
 mettalicity = 0.33
 log_g = 4.33
-Ebv = 0.3 
+Ebv = 0.3'''
 #SED_flux_bands(Teff, mettalicity, log_g, Ebv)
 
