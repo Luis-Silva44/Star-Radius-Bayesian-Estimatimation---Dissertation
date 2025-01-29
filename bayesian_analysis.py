@@ -1,97 +1,99 @@
 # %% 
-from SED_fitting import * 
-from gaia_module import * 
-from auxiliary_functions import * 
+from gaia_module import gaia_values
+from SED_fitting import get_flux_values
+from SED_flux import SED_flux_bands
 # %%
-def get_flux(star_name, Teff, mettalicity, log_g, Ebv, unit):
-    _, parallax, _= gaia_values(star_name)
-    unit_change = 1 * u.parsec
-    distance = (1 / parallax.value) * unit_change
-    filter_wavelen, photometry_flux_Jy = get_flux_values(star_name)
-    wavelen, SED_flux_Jy = SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
-    
-    photometry_flux = flux_unit_change(photometry_flux_Jy, unit)
-    SED_flux = flux_unit_change(SED_flux_Jy, unit)
-
-    photometry_flux_vals = []
-    photometry_flux_unc = []
-    for i in range(len(wavelen)):
-        photometry_flux_vals.append(photometry_flux[i].value.nominal_value)
-        photometry_flux_unc.append(photometry_flux[i].value.std_dev)
-
-    photometry_flux_vals = np.array(photometry_flux_vals)
-    photometry_flux_unc = np.array(photometry_flux_unc)
-    photometry_flux_unc = np.where(photometry_flux_unc == 0, 1e-10, photometry_flux_unc)
-
-    return photometry_flux_vals, photometry_flux_unc, SED_flux.value, distance.value.nominal_value
-# %%
-
-star_name = 'DE Boo'	
-Teff = 5289
-logg = 4.27
-mettalicity = 0.03
-table_value = (0.863 * R_sun).to(R_sun)
-Ebv = 0.04
-
-#photometry_flux_vals, photometry_flux_unc, SED_flux,distance = get_flux(star_name, Teff, mettalicity, log_g, Ebv, 'Jy')
-# %%
-
-import numpy as np
-import emcee
 import matplotlib.pyplot as plt
+import numpy as np
+import astropy.units as u
+from astropy.constants import R_sun
+import emcee
+import scipy.stats as stats
 
-# Define the log-likelihood function
-def log_likelihood(radius, photometry_flux_vals, photometry_flux_unc, SED_flux, distance):
-    if radius <= 0:
-        return -np.inf  
+#  %% 
+
+star_name = 'WASP-8'
+Ebv = 0.085
+
+Teff_mean = 5690 # Example Teff value in Kelvin
+Teff_std = 36 # Standard deviation for Teff
+
+log_g_mean = 4.42 # Example log(g) value
+log_g_std = 0.15  # Standard deviation for log(g)
+
+metallicity_mean = 0.29  # Example metallicity value
+metallicity_std = 0.03  # Standard deviation for metallicity
+
+_, parallax, _= gaia_values(star_name)
+unit_change = 1 * u.parsec
+distance1 = (1 / parallax.value) * unit_change
+distance = distance1.to(R_sun)
+distance_value = distance.value.nominal_value
+distance_std = distance.value.std_dev
+
+filter_wavelen, flux_values_Jy = get_flux_values(star_name)
+flux_values = flux_values_Jy.value
+flux_vals = [m.nominal_value for m in flux_values]
+flux_unc = [m.std_dev for m in flux_values]
+#%%
+def log_likelihood(params, obs_flux, obs_flux_unc, filter_wavelen):
+    Teff, log_g, metallicity, distance, radius = params
+    filter_wavelen, model_flux = SED_flux_bands(filter_wavelen, Teff, metallicity, log_g, Ebv)
+    model_flux = model_flux * (radius/distance)**2
+    return -0.5 * np.sum(((model_flux.value - obs_flux) / obs_flux_unc)**2)
+
+def log_prior(theta):
+    Teff, log_g, metallicity, radius, distance = theta
     
-    scaled_SED_flux = SED_flux * (radius**2 / distance**2)
-    chi_squared = np.sum(((photometry_flux_vals - scaled_SED_flux) / photometry_flux_unc) ** 2)
-    log_likelihood_value = -0.5 * chi_squared
-    return log_likelihood_value
+    if not (3500 < Teff < 12000): return -np.inf
+    if not (0.0 < log_g < 5.0): return -np.inf
+    if not (-2.5 < metallicity < 0.5): return -np.inf
+    if not (0.1 < radius < 1000): return -np.inf
 
-# Define the log-prior function
-def log_prior(radius):
- 
-    if 0.1 < radius < 10.0:  
-        return 0.0  # log(1) = 0
-    else:
-        return -np.inf 
+    prior = 0
+    prior += stats.norm(Teff_mean, Teff_std).logpdf(Teff)
+    prior += stats.norm(log_g_mean, log_g_std).logpdf(log_g)
+    prior += stats.norm(metallicity_mean, metallicity_std).logpdf(metallicity)
+    prior += stats.norm(distance_value, distance_std).logpdf(distance)
+    
+    return prior
 
-# Define the log-posterior function
-def log_posterior(radius, photometry_flux_vals, photometry_flux_unc, SED_flux, distance):
-    log_prior_value = log_prior(radius)
-    if log_prior_value == -np.inf:
-        return -np.inf  
-    log_likelihood_value = log_likelihood(radius, photometry_flux_vals, photometry_flux_unc, SED_flux, distance)
-    return log_prior_value + log_likelihood_value
+def log_posterior(params, obs_flux, obs_flux_unc, filter_wavelen):
+    prior = log_prior(params)
+    if np.isinf(prior):
+        return -np.inf
+    
+    return prior + log_likelihood(params, obs_flux, obs_flux_unc, filter_wavelen)
 
+# Setup for emcee
+nwalkers = 10  # Number of walkers
+ndim = 5  # Number of parameters: Teff, log_g, metallicity, radius, distance
+nsteps = 100  # Number of MCMC steps
 
-def run_mcmc(photometry_flux_vals, photometry_flux_unc, SED_flux, distance, n_walkers=32, n_steps=5000):
+p0 = np.random.randn(nwalkers, ndim)
+p0[:, 0] = Teff_mean + Teff_std * np.random.randn(nwalkers) 
+p0[:, 1] = log_g_mean + log_g_std * np.random.randn(nwalkers)  
+p0[:, 2] = metallicity_mean + metallicity_std * np.random.randn(nwalkers)  
+p0[:, 4] = distance_value + distance_std * np.random.randn(nwalkers)  
+p0[:, 3] = 1.0 + 0.5 * np.random.randn(nwalkers)  
+# %% 
+sampler = emcee.EnsembleSampler(nwalkers, ndim, log_posterior, args=(flux_vals, flux_unc, filter_wavelen))
+state = sampler.run_mcmc(p0, nsteps, progress=True)
+# %% 
+samples = sampler.get_chain()
 
-    initial_radius = 1.0  
-    initial_positions = initial_radius + 0.1 * np.random.randn(n_walkers, 1) 
-    sampler = emcee.EnsembleSampler(
-        n_walkers, 
-        1,  # Single parameter
-        log_posterior, 
-        args=(photometry_flux_vals, photometry_flux_unc, SED_flux, distance)
-    )
-    sampler.run_mcmc(initial_positions, n_steps, progress=True)
-    samples = sampler.get_chain(flat=True)
-    return samples
-
-
-photometry_flux_vals, photometry_flux_unc, SED_flux, distance = get_flux(star_name, Teff, mettalicity, log_g, Ebv, 'Jy')
-
-samples = run_mcmc(photometry_flux_vals, photometry_flux_unc, SED_flux, distance)
-radius_median = np.median(samples)
-print('Stellar Radius:', radius_median, 'R_sun')
-
-plt.hist(samples, bins=50, density=True, alpha=0.7, color="blue")
-plt.xlabel("Stellar Radius (R_sun)")
-plt.ylabel("Probability Density")
-plt.title("Posterior Distribution of Stellar Radius")
-plt.legend()
-plt.grid()
+# Plot the results
+fig, axes = plt.subplots(ndim, figsize=(10, 7), sharex=True)
+labels = ["Teff", "log_g", "metallicity", "radius", "distance"]
+for i in range(ndim):
+    axes[i].plot(samples[:, :, i], color="k", alpha=0.3)
+    axes[i].set_ylabel(labels[i])
+axes[-1].set_xlabel("Step number")
 plt.show()
+
+# Compute the mean and standard deviation of the posterior distribution
+flat_samples = sampler.get_chain(discard = 40, thin=1, flat=True)
+for i in range(ndim):
+    print(f"{labels[i]}: {np.mean(flat_samples[:, i])} ± {np.std(flat_samples[:, i])}")
+
+# %%
