@@ -35,11 +35,11 @@ Teff_grid = np.array(Teff_grid)
 # %% Create the vertices of a 3D cube of parameters as limits of interpolation 
 def SED_high_and_low(Teff,mettalicity,logg):
     Teff_low = max([t for t in Teff_grid if t <= Teff])
-    Teff_high = min([t for t in Teff_grid if t > Teff])
+    Teff_high = min([t for t in Teff_grid if t >= Teff])
     mettalicity_low = max([m for m in mettalicity_grid if m <= mettalicity])
-    mettalicity_high = min([m for m in mettalicity_grid if m > mettalicity])
+    mettalicity_high = min([m for m in mettalicity_grid if m >= mettalicity])
     logg_low = max([l for l in logg_grid if l <= logg])
-    logg_high = min([l for l in logg_grid if l > logg])
+    logg_high = min([l for l in logg_grid if l >= logg])
 
     Teff_values = [Teff_low, Teff_high]
     mettalicity_values =  [mettalicity_low, mettalicity_high]
