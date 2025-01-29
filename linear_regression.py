@@ -1,13 +1,19 @@
 # %% 
+from gaia_module import gaia_values
+from SED_fitting import get_flux_values
+from SED_flux import SED_flux_bands
+# %%
 import arviz as az
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-
+import astropy.units as u
 import pymc as pm
-
-from pymc import HalfCauchy, Model, Normal, sample
+from math import prod
+from astropy.constants import R_sun
+from pymc import HalfCauchy, Normal, Model, sample
+# %% 
 # %% 
 RANDOM_SEED = 8927
 rng = np.random.default_rng(RANDOM_SEED)
@@ -28,7 +34,6 @@ ax = fig.add_subplot(111, xlabel="x", ylabel="y", title="Generated data and unde
 ax.plot(x, y, "x", label="sampled data")
 ax.plot(x, true_regression_line, label="true regression line", lw=2.0)
 plt.legend(loc=0)
-
 # %% 
 with Model() as model:  # model specifications in PyMC are wrapped in a with-statement
     # Define priors
@@ -40,17 +45,12 @@ with Model() as model:  # model specifications in PyMC are wrapped in a with-sta
     likelihood = Normal("y", mu=intercept + slope * x, sigma=sigma, observed=y)
 
     # Inference!
-    # draw 3000 posterior samples using NUTS sampling
-    idata = sample(3000)
+    # draw 300 posterior samples using NUTS sampling
+    idata = sample(300)
 
 # %% 
 
 az.plot_trace(idata, figsize=(10, 7))
 # %%
 
-idata.posterior["y_model"] = idata.posterior["Intercept"] + idata.posterior["x"] * xr.DataArray(x)
-
-_, ax = plt.subplots(figsize=(7, 7))
-az.plot_lm(idata=idata, y="y", num_samples=100, axes=ax, y_model="y_model")
-ax.set_title("Posterior predictive regression lines")
-ax.set_xlabel("x")
+import astroARIADNE as ari
