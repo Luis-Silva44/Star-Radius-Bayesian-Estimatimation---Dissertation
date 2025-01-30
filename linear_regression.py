@@ -1,56 +1,91 @@
-# %% 
-from gaia_module import gaia_values
-from SED_fitting import get_flux_values
-from SED_flux import SED_flux_bands
 # %%
-import arviz as az
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import xarray as xr
-import astropy.units as u
-import pymc as pm
-from math import prod
-from astropy.constants import R_sun
-from pymc import HalfCauchy, Normal, Model, sample
-# %% 
-# %% 
-RANDOM_SEED = 8927
-rng = np.random.default_rng(RANDOM_SEED)
-
-size = 200
-true_intercept = 1
-true_slope = 2
-
-x = np.linspace(0, 1, size)
-# y = a + b*x
-true_regression_line = true_intercept + true_slope * x
-# add noise
-y = true_regression_line + rng.normal(scale=0.5, size=size)
-
-data = pd.DataFrame({"x": x, "y": y})
-fig = plt.figure(figsize=(7, 7))
-ax = fig.add_subplot(111, xlabel="x", ylabel="y", title="Generated data and underlying model")
-ax.plot(x, y, "x", label="sampled data")
-ax.plot(x, true_regression_line, label="true regression line", lw=2.0)
-plt.legend(loc=0)
-# %% 
-with Model() as model:  # model specifications in PyMC are wrapped in a with-statement
-    # Define priors
-    sigma = HalfCauchy("sigma", beta=10)
-    intercept = Normal("Intercept", 0, sigma=20)
-    slope = Normal("slope", 0, sigma=20)
-
-    # Define likelihood
-    likelihood = Normal("y", mu=intercept + slope * x, sigma=sigma, observed=y)
-
-    # Inference!
-    # draw 300 posterior samples using NUTS sampling
-    idata = sample(300)
-
-# %% 
-
-az.plot_trace(idata, figsize=(10, 7))
+import matplotlib.pyplot as plt
+import emcee
+import corner
+from IPython.display import display, Math
 # %%
 
-import astroARIADNE as ari
+np.random.seed(123)
+
+# Choose the "true" parameters.
+m_true = -0.9594
+b_true = 4.294
+
+# Generate some synthetic data from the model.
+N = 50
+x = np.sort(10 * np.random.rand(N))
+yerr = 0.1 + 0.5 * np.random.rand(N)
+y = m_true * x + b_true
+y += yerr * np.random.randn(N)
+
+plt.errorbar(x, y, yerr=yerr, fmt=".k", capsize=0)
+x0 = np.linspace(0, 10, 500)
+plt.plot(x0, m_true * x0 + b_true, "k", alpha=0.3, lw=3)
+plt.xlim(0, 10)
+plt.xlabel("x")
+plt.ylabel("y")
+plt.show()
+# %%
+def log_likelihood(theta, x, y, yerr):
+    m, b = theta
+    model = m * x + b
+    sigma2 = yerr**2
+    return -0.5 * np.sum((y - model) ** 2 / sigma2)
+
+def log_prior(theta):
+    m, b = theta
+    if -5.0 < m < 0.5 and 0.0 < b < 10.0:
+        return 0.0
+    return -np.inf
+
+def log_probability(theta, x, y, yerr):
+    lp = log_prior(theta)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + log_likelihood(theta, x, y, yerr)
+
+pos = (-0.90, 4.3) + 1e-4 * np.random.randn(32, 2)
+nwalkers, ndim = pos.shape
+
+sampler = emcee.EnsembleSampler(
+    nwalkers, ndim, log_probability, args=(x, y, yerr)
+)
+sampler.run_mcmc(pos, 5000, progress=True)
+
+# %% 
+fig, axes = plt.subplots(2, figsize=(10, 7), sharex=True)
+samples = sampler.get_chain()
+labels = ["m", "b"]
+for i in range(ndim):
+    ax = axes[i]
+    ax.plot(samples[:, :, i], "k", alpha=0.3)
+    ax.set_xlim(0, len(samples))
+    ax.set_ylabel(labels[i])
+    ax.yaxis.set_label_coords(-0.1, 0.5)
+
+axes[-1].set_xlabel("step number")
+flat_samples = sampler.get_chain(discard=100, thin=15, flat=True)
+
+fig = corner.corner(
+    flat_samples, labels=labels, truths=[m_true, b_true])
+# %%
+inds = np.random.randint(len(flat_samples), size=100)
+for ind in inds:
+    sample = flat_samples[ind]
+    plt.plot(x0, np.dot(np.vander(x0, 2), sample[:2]), "C1", alpha=0.1)
+plt.errorbar(x, y, yerr=yerr, fmt=".k", capsize=0)
+plt.plot(x0, m_true * x0 + b_true, "k", label="truth")
+plt.legend(fontsize=14)
+plt.xlim(0, 10)
+plt.xlabel("x")
+plt.ylabel("y")
+# %%
+for i in range(ndim):
+    mcmc = np.percentile(flat_samples[:, i], [16, 50, 84])
+    q = np.diff(mcmc)
+    txt = "\mathrm{{{3}}} = {0:.3f}_{{-{1:.3f}}}^{{{2:.3f}}}"
+    txt = txt.format(mcmc[1], q[0], q[1], labels[i])
+    display(Math(txt))
+
+# %%
