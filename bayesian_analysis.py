@@ -11,7 +11,6 @@ import emcee
 import scipy.stats as stats
 import multiprocessing
 import corner
-from scipy.optimize import minimize
 #  %% 
 star_name = 'WASP-84'
 Ebv = 0.020
@@ -41,11 +40,30 @@ flux_unc = [m.std_dev for m in flux_values]
 def log_likelihood(params, obs_flux, obs_flux_unc, filter_wavelen):
     try:
         Teff, log_g, metallicity, distance, radius = params
+        #print(Teff, log_g, metallicity, distance, radius)
         filter_wavelen, model_flux = SED_flux_bands(filter_wavelen, Teff, metallicity, log_g, Ebv)
         model_flux = model_flux * (radius/distance)**2
-        return -0.5 * np.sum(((model_flux.value - obs_flux) / obs_flux_unc)**2)
+        c = np.log(2 * np.pi * obs_flux_unc**2)
+        return -0.5 * (c + ((model_flux.value - obs_flux)) ** 2 / obs_flux_unc**2).sum()
     except:
         return -np.inf
+    
+def log_likelihood2(params, obs_flux, obs_flux_unc, filter_wavelen):
+    try:
+        Teff, log_g, metallicity, distance, radius = params
+        #print(Teff, log_g, metallicity, distance, radius)
+        filter_wavelen, model_flux = SED_flux_bands(filter_wavelen, Teff, metallicity, log_g, Ebv)
+        model_flux = model_flux * (radius/distance)**2
+        return ((model_flux.value - obs_flux) ** 2 / obs_flux_unc**2).sum()
+    except:
+        return -np.inf
+    
+def uniform_prior(theta):
+    Teff, log_g, metallicity, radius, distance = theta
+
+    if (3500 < Teff < 8000) and (0.0 < log_g < 5.0) and (-2.5 < metallicity < 0.5) and (.1 < radius < 1000) and (1.0 < distance < 1e300):
+        return 0.0
+    return -np.inf
 
 def log_prior(theta):
     Teff, log_g, metallicity, radius, distance = theta
@@ -59,16 +77,16 @@ def log_prior(theta):
     prior += stats.norm(Teff_mean, Teff_std).logpdf(Teff)
     prior += stats.norm(log_g_mean, log_g_std).logpdf(log_g)
     prior += stats.norm(metallicity_mean, metallicity_std).logpdf(metallicity)
-    prior += stats.norm(distance_value, distance_std).logpdf(distance)
-    
+    prior += stats.norm(distance_value, distance_std).logpdf(distance) 
     return prior
 
 def log_posterior(params, obs_flux, obs_flux_unc, filter_wavelen):
     prior = log_prior(params)
-    if np.isinf(prior):
+    prior2 = uniform_prior(params)
+    if np.isinf(prior2):
         return -np.inf
     
-    return prior + log_likelihood(params, obs_flux, obs_flux_unc, filter_wavelen)
+    return prior2 + log_likelihood2(params, obs_flux, obs_flux_unc, filter_wavelen)
 
 # Setup for emcee
 nwalkers = 10  # Number of walkers
@@ -76,10 +94,10 @@ ndim = 5
 nsteps = 100  # Number of MCMC steps
 
 p0 = np.random.randn(nwalkers, ndim)
-p0[:, 0] = Teff_mean + Teff_std * np.random.randn(nwalkers) 
-p0[:, 1] = log_g_mean + log_g_std * np.random.randn(nwalkers)  
-p0[:, 2] = metallicity_mean + metallicity_std * np.random.randn(nwalkers)  
-p0[:, 4] = distance_value + distance_std * np.random.randn(nwalkers)  
+p0[:, 0] = np.random.normal(Teff_mean,Teff_std,nwalkers)
+p0[:, 1] = np.random.normal(log_g_mean,log_g_std,nwalkers)
+p0[:, 2] = np.random.normal(metallicity_mean,metallicity_std,nwalkers)
+p0[:, 4] = np.random.normal(distance_value,distance_std,nwalkers)
 p0[:, 3] = 1.0 + 0.5 * np.random.randn(nwalkers)  
 
 # %% 
