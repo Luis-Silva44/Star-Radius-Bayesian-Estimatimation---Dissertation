@@ -8,7 +8,6 @@ import numpy as np
 import astropy.units as u
 from astropy.constants import R_sun
 import emcee
-import scipy.stats as stats
 import multiprocessing
 import corner
 from IPython.display import display, Math
@@ -68,6 +67,8 @@ sampler = emcee.EnsembleSampler(nwalkers, ndim, posterior, args=(obs_flux, obs_f
 sampler.run_mcmc(pos, 2500, progress=True)
 
 # %% 
+print("Mean acceptance fraction:", np.mean(sampler.acceptance_fraction))
+print("Mean autocorrelation time:", np.mean(sampler.get_autocorr_time()))
 fig, axes = plt.subplots(2, figsize=(10, 7), sharex=True)
 samples = sampler.get_chain()
 labels = ["Distance", "Radius"]
@@ -80,7 +81,7 @@ for i in range(ndim):
 
 axes[-1].set_xlabel("step number")
 # %%
-flat_samples = sampler.get_chain(flat=True)
+flat_samples = sampler.get_chain(discard=500, flat=True)
 fig = corner.corner(
     flat_samples, labels=labels)
 
