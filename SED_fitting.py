@@ -146,6 +146,6 @@ logg = 4.28
 mettalicity = 0.05
 table_value = (0.828 * R_sun).to(R_sun)
 Ebv = 0.074
-single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
+#single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
 
 # %%
