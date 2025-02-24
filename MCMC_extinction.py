@@ -22,7 +22,6 @@ def likelihood(params, obs_flux, obs_flux_unc, log_g, metallicity, filter_wavele
         distance, temperature, Ebv, radius = params
         distance2 = (distance * u.pc).to(R_sun)
         SED_wavelen, model_flux = SED_interpolator(temperature, metallicity, log_g)
-
         nearest_index = []
         for i in range(len(filter_wavelen)):
             nearest_index.append(find_nearest_index(SED_wavelen, filter_wavelen[i]))
@@ -46,7 +45,7 @@ def prior(params, exp_distance, exp_temperature, temp_unc):
         temperature_prior = -0.5*((temperature - exp_temperature) / temp_unc)**2
         return distance_prior + temperature_prior
 
-def posterior(params, obs_flux, obs_flux_unc, exp_distance, exp_temperature, temp_unc, filter_wavelen):
+def posterior(params, obs_flux, obs_flux_unc, exp_distance, exp_temperature, temp_unc, log_g, metallicity, filter_wavelen):
         log_prior = prior(params, exp_distance, exp_temperature, temp_unc)
         if not np.isfinite(log_prior):
             return -np.inf
@@ -57,17 +56,18 @@ def basic_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, log_g, metallicity,
     exp_distance, exp_temperature, temp_unc, exp_Ebv, exp_radius = exp_values 
 
     pos = np.array([exp_distance.value.nominal_value + exp_distance.value.std_dev * np.random.randn(nwalkers), 
-                np.abs(np.random.normal(0.5, 0.2, size=nwalkers)),
-                np.random.normal(1.0, 0.5, size=nwalkers)]).T
+                    exp_temperature + temp_unc * np.random.randn(nwalkers),
+                    np.abs(np.random.normal(0.1, 0.05, size=nwalkers)),
+                    np.random.normal(1.0, 0.5, size=nwalkers)]).T
 
     nwalkers, ndim = pos.shape
 
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, posterior, args=(obs_flux, obs_flux_unc, exp_distance, exp_temperature, temp_unc, exp_Ebv, log_g, metallicity, filter_wavelen), pool = multiprocessing.Pool(16))
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, posterior, args=(obs_flux, obs_flux_unc, exp_distance, exp_temperature, temp_unc, log_g, metallicity, filter_wavelen), pool = multiprocessing.Pool(12))
     state = sampler.run_mcmc(pos, 1500, progress=True)
 
     labels = ["Distance", "Temperature", "E(B-V)", "Radius"]
-    fig, axes = plt.subplots(3, figsize=(10, 7), sharex=True)
-    samples = sampler.get_chain(discard=500)
+    fig, axes = plt.subplots(4, figsize=(10, 7), sharex=True)
+    samples = sampler.get_chain()
 
     for i in range(ndim):
         ax = axes[i]
@@ -78,7 +78,7 @@ def basic_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, log_g, metallicity,
 
     axes[-1].set_xlabel("step number")
 
-    flat_samples = sampler.get_chain(discard=2000, flat=True)
+    flat_samples = sampler.get_chain(discard = 350, flat=True)
     fig = corner.corner(flat_samples, labels=labels)
     plt.show()
 
@@ -90,7 +90,7 @@ def basic_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, log_g, metallicity,
         txt = txt.format(mcmc[1], q[0], q[1], labels[i])
         display(Math(txt))
         print('Error in ', labels[i], '=', abs(mcmc[1] - expected_values[i]) / expected_values[i] * 100)
-        if i == 2:
+        if i == 3:
             return (mcmc[1] * R_sun).to(R_sun), sampler
 
 # %%
@@ -146,25 +146,26 @@ def star_set_tester_MCMC(star_list):
     return problem_stars, computed_radius, table_value_radius
 # %% 
 
-star_data = pd.read_csv('~/tese/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
-star_test_subset = star_data.head()
+#star_data = pd.read_csv('~/tese/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
+#star_test_subset = star_data.head()
 
 # %%
 #problem_stars, computed_list, table_list = star_set_tester_MCMC(star_data)
 # %%
-computed_radii = np.array([i.value for i in computed_list])
-table_values = np.array([i.value for i in table_list])
-computed_real_comparison(computed_radii, table_values)
+#computed_radii = np.array([i.value for i in computed_list])
+#table_values = np.array([i.value for i in table_list])
+#computed_real_comparison(computed_radii, table_values)
 
 #  %% 
 
-star_name = 'TOI-2350'
-expected_Ebv = 0.005
-table_value = (1.052 * R_sun).to(R_sun)
+star_name = 'WASP-84'
+expected_Ebv = 0.020
+table_value = (0.828 * R_sun).to(R_sun)
 
-Teff = 5481
-log_g = 0.32
-metallicity = 4.45
+exp_Teff = 5221
+Teff_unc = 72
+log_g = 4.28
+metallicity = 0.05
 
 _, parallax, _= gaia_values(star_name)
 unit_change = 1 * u.parsec
@@ -174,16 +175,52 @@ filter_wavelen, flux_values = get_flux_values(star_name)
 obs_flux = np.array([m.value.nominal_value for m in flux_values])
 obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
 
-SED_wavelen, SED_flux = SED_interpolator(Teff,metallicity,log_g)
-nearest_index = []
-for i in range(len(filter_wavelen)):
-    nearest_index.append(find_nearest_index(SED_wavelen, filter_wavelen[i]))
 
-model_flux = np.array([SED_flux[i].value for i in nearest_index])
-exp_values = (exp_distance, expected_Ebv, table_value)
+exp_values = (exp_distance, exp_Teff, Teff_unc, expected_Ebv, table_value)
 
-basic_MCMC(exp_values, 10, obs_flux, obs_flux_unc, model_flux, filter_wavelen)
-
+comp_radius, sampler2 = basic_MCMC(exp_values, 12, obs_flux, obs_flux_unc, log_g, metallicity, filter_wavelen)
 # %%
+star_name = 'HD128582'
+expected_Ebv = 0.008
+table_value = (1.63 * R_sun).to(R_sun)
 
+exp_Teff = 6168
+Teff_unc = 29
+log_g = 4.17
+metallicity = 0.098
+
+_, parallax, _= gaia_values(star_name)
+unit_change = 1 * u.parsec
+exp_distance = (1 / parallax.value) * unit_change
+
+filter_wavelen, flux_values = get_flux_values(star_name)
+obs_flux = np.array([m.value.nominal_value for m in flux_values])
+obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
+
+
+exp_values = (exp_distance, exp_Teff, Teff_unc, expected_Ebv, table_value)
+
+comp_radius, sampler5 = basic_MCMC(exp_values, 12, obs_flux, obs_flux_unc, log_g, metallicity, filter_wavelen)
+# %%
+star_name = 'HD 49674'
+expected_Ebv = 0.028
+table_value = (1.022 * R_sun).to(R_sun)
+
+exp_Teff = 5662
+Teff_unc = 72
+log_g = 4.42
+metallicity = 0.3
+
+_, parallax, _= gaia_values(star_name)
+unit_change = 1 * u.parsec
+exp_distance = (1 / parallax.value) * unit_change
+
+filter_wavelen, flux_values = get_flux_values(star_name)
+obs_flux = np.array([m.value.nominal_value for m in flux_values])
+obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
+
+
+exp_values = (exp_distance, exp_Teff, Teff_unc, expected_Ebv, table_value)
+
+comp_radius, sampler8 = basic_MCMC(exp_values, 12, obs_flux, obs_flux_unc, log_g, metallicity, filter_wavelen)
 # %%
