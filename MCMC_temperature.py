@@ -45,13 +45,13 @@ def basic_MCMC_temperature(exp_values, nwalkers, obs_flux, obs_flux_unc, log_g, 
     exp_distance, exp_temp, expected_radius, temp_unc = exp_values 
 
     pos = np.array([exp_distance.value.nominal_value + exp_distance.value.std_dev * np.random.randn(nwalkers), 
-                np.random.normal(5000, 1500, size=nwalkers),
+                exp_temp + temp_unc * np.random.randn(nwalkers),
                 np.random.normal(1.0, 0.5, size=nwalkers)]).T
 
     nwalkers, ndim = pos.shape
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim, posterior, args=(obs_flux, obs_flux_unc, log_g, metallicity, Ebv, filter_wavelen, exp_distance, exp_temp, temp_unc), pool = multiprocessing.Pool(16), moves=emcee.moves.DEMove())
-    state = sampler.run_mcmc(pos, 1200, progress=True)
+    state = sampler.run_mcmc(pos, 1500, progress=True)
 
     labels = ["Distance", "Temperature", "Radius"]
     fig, axes = plt.subplots(3, figsize=(10, 7), sharex=True)
@@ -66,7 +66,7 @@ def basic_MCMC_temperature(exp_values, nwalkers, obs_flux, obs_flux_unc, log_g, 
 
     axes[-1].set_xlabel("step number")
 
-    flat_samples = sampler.get_chain(discard = 500, flat=True)
+    flat_samples = sampler.get_chain(discard = 350, flat=True)
     fig = corner.corner(flat_samples, labels=labels)
     plt.show()
 
@@ -100,6 +100,48 @@ obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
 
 exp_values = (exp_distance, exp_temp, table_value, temp_unc)
 # %% 
-comp_radius, sampler = basic_MCMC_temperature(exp_values, 12, obs_flux, obs_flux_unc, log_g, metallicity, Ebv, filter_wavelen)
-
+comp_radius, sampler1 = basic_MCMC_temperature(exp_values, 12, obs_flux, obs_flux_unc, log_g, metallicity, Ebv, filter_wavelen)
 # %%
+star_name = 'HD128582'
+exp_temp = 6168
+temp_unc = 29
+table_value = (1.63 * R_sun).to(R_sun)
+
+Ebv = 0.008
+log_g = 4.17
+metallicity = 0.098
+
+_, parallax, _= gaia_values(star_name)
+unit_change = 1 * u.parsec
+exp_distance = (1 / parallax.value) * unit_change
+
+filter_wavelen, flux_values = get_flux_values(star_name)
+obs_flux = np.array([m.value.nominal_value for m in flux_values])
+obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
+
+exp_values = (exp_distance, exp_temp, table_value, temp_unc)
+
+comp_radius, sampler2 = basic_MCMC_temperature(exp_values, 12, obs_flux, obs_flux_unc, log_g, metallicity, Ebv, filter_wavelen)
+# %%
+star_name = 'WASP-84'
+exp_temp = 5221
+temp_unc = 72
+table_value = (0.828 * R_sun).to(R_sun)
+
+Ebv = 0.020
+log_g = 4.28
+metallicity = 0.05
+
+_, parallax, _= gaia_values(star_name)
+unit_change = 1 * u.parsec
+exp_distance = (1 / parallax.value) * unit_change
+
+filter_wavelen, flux_values = get_flux_values(star_name)
+obs_flux = np.array([m.value.nominal_value for m in flux_values])
+obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
+
+exp_values = (exp_distance, exp_temp, table_value, temp_unc)
+
+comp_radius, sampler3 = basic_MCMC_temperature(exp_values, 12, obs_flux, obs_flux_unc, log_g, metallicity, Ebv, filter_wavelen)
+# %%
+flat_samples = sampler2.get_chain(discard=350, flat=True)
