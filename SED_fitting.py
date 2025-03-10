@@ -23,6 +23,7 @@ def get_flux_values(star_name):
     filter_check = gaia_check + two_mass_check + wise_check
     filter_wavelen = band_wavelen(filter_check)
     flux_values_Jy = flux_values.to(u.Jy, equivalencies=u.spectral_density(filter_wavelen))
+
     return filter_wavelen, flux_values_Jy
 
 # %%
@@ -32,8 +33,8 @@ def SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, unit):
     unit_change = 1 * u.parsec
     distance = (1 / parallax.value) * unit_change
     filter_wavelen, photometry_flux_Jy = get_flux_values(star_name)
-    _, SED_flux_Jy = SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
-    
+    SED_flux_Jy = SED_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
+
     photometry_flux = flux_unit_change(photometry_flux_Jy, unit)
     SED_flux = flux_unit_change(SED_flux_Jy, unit)
 
@@ -55,10 +56,14 @@ def SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, unit):
     minimization_radius= minimization_result.x[0]
 
     minimization_radius = (minimization_radius * R_sun).to(R_sun)
+    SED_flux = SED_flux * minimization_radius**2 / (distance.value.nominal_value * u.parsec).to(R_sun) ** 2
 
     SED_wavelen, SED_att = SED_attenuated(Teff,mettalicity,log_g,Ebv)
     SED_att = flux_unit_change(SED_att, unit)
-    SED_fitting_plot(SED_wavelen, SED_att, filter_wavelen, photometry_flux_vals, photometry_flux_unc, minimization_radius.value, distance)
+
+    print(SED_att, '---', SED_flux)
+
+    SED_fitting_plot(SED_wavelen, SED_att, SED_flux, filter_wavelen, photometry_flux_vals, photometry_flux_unc, minimization_radius.value, distance)
 
     return minimization_radius, minimization_result
 
@@ -140,12 +145,20 @@ HD 219134
 HD128582
 '''
 # %% 
-star_name ='WASP-84'
-Teff = 5221
-logg = 4.28
-mettalicity = 0.05
-table_value = (0.828 * R_sun).to(R_sun)
-Ebv = 0.074
-#single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
+star_name =  'HD 49674'
+Teff =  5662
+logg = 4.42
+mettalicity = 0.3
+table_value = (1.022 * R_sun).to(R_sun)
+Ebv = 0.028
+single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
 
+# %%
+star_name =  'HD 49674'
+Teff = 6586
+logg = 3.505
+mettalicity = 0.464
+table_value = (0.948 * R_sun).to(R_sun)
+Ebv = 0.213
+single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
 # %%
