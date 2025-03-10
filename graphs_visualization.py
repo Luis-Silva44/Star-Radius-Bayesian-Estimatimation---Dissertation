@@ -9,7 +9,7 @@ from uncertainties import umath
 import pandas as pd
 # %%
 
-def SED_fitting_plot(SED_wavelen, SED_flux, filter_wavelen, photometry_flux_values, photometry_flux_unc, minimization_radius, distance):
+def SED_fitting_plot(SED_wavelen, SED_flux, synth_phot, filter_wavelen, photometry_flux_values, photometry_flux_unc, minimization_radius, distance):
     minimization_flux = SED_flux * minimization_radius **2 / distance.to(R_sun) ** 2
     minimization_flux = np.array([flux.value.nominal_value for flux in minimization_flux])
 
@@ -18,9 +18,10 @@ def SED_fitting_plot(SED_wavelen, SED_flux, filter_wavelen, photometry_flux_valu
     plt.ylabel(f'Flux ({SED_flux.unit})')
     plt.plot(SED_wavelen, minimization_flux)
     plt.errorbar(filter_wavelen, photometry_flux_values, yerr = photometry_flux_unc, fmt='o')
+    plt.plot(filter_wavelen, synth_phot.value, 'o')
     plt.xlim(0,23)
     plt.grid()
-    plt.legend(['Model flux','Observed flux'])
+    plt.legend(['Model flux','Synthetic Photometry', 'Observed flux'])
     plt.show()
 
 # %% 
