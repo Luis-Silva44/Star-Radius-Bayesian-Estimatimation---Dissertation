@@ -36,8 +36,8 @@ def wise_values(star_name):
             wise_check = ['W1','W2','W3']
         else: 
             unit = 1 * u.watt / u.um / u.cm**2
-            wise_flux = np.array([W1_flux, W2_flux, W3_flux, W4_flux]) * unit
-            wise_check = ['W1','W2','W3','W4']
+            wise_flux = np.array([W1_flux, W2_flux, W3_flux]) * unit
+            wise_check = ['W1','W2', 'W3']
         
     else:
         unit = 1 * u.watt / u.um / u.cm**2
@@ -46,3 +46,5 @@ def wise_values(star_name):
         print('No WISE data found')
     
     return wise_flux, wise_check
+
+# %%
