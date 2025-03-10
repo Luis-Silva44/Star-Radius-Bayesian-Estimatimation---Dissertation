@@ -24,8 +24,8 @@ def flux_unit_change(value,unit):
         raise ValueError('Unit not recognized by programm')
     
 # %% 
-url="https://exofop.ipac.caltech.edu/tess/download_toi.php?sort=toi&output=pipe"
-TOI_df=pd.read_csv(url, delimiter='|', index_col=1)
+#url="https://exofop.ipac.caltech.edu/tess/download_toi.php?sort=toi&output=pipe"
+#TOI_df=pd.read_csv(url, delimiter='|', index_col=1)
 # %% 
 def retrieve_gaia_id(star_name):
     if type(star_name) == int:
