@@ -1,5 +1,6 @@
 # %% Imports
 from auxiliary_functions import * 
+from transmission_test import * 
 
 from scipy.interpolate import LinearNDInterpolator
 import pysynphot as S
@@ -72,8 +73,7 @@ def SED_interpolator(Teff,mettalicity,logg):
     interpolated_fluxes = np.array(interpolated_fluxes) * u.erg / u.cm**2 / u.s / u.angstrom
 
     SED_wavelen = SED_wavelen.to(u.um)
-    model_flux_Jy = interpolated_fluxes.to(u.Jy, u.spectral_density(SED_wavelen))
-
+    model_flux_Jy = interpolated_fluxes.to(u.Jy, u.spectral_density(SED_wavelen))   
     return SED_wavelen, model_flux_Jy
 
 # %% Function that applies extinction to the SED 
@@ -88,7 +88,7 @@ def SED_attenuated(Teff, mettalicity, logg, Ebv):
     return wavelen, flux_attenuated
 
 # %% Create a list of SED flux values with the size and wavelengths of the filter list
-def SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv):
+'''def SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv):
     SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, mettalicity, log_g, Ebv)
     nearest_index = []
     for i in range(len(filter_wavelen)):
@@ -96,13 +96,28 @@ def SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv):
 
     model_flux_values_Jy = np.array([SED_fluxes_Jy[i].value for i in nearest_index]) * u.Jy
 
-    return filter_wavelen, model_flux_values_Jy
+    return filter_wavelen, model_flux_values_Jy'''
+# %% 
+def SED_bands(filter_wavelen, Teff, metallicity, log_g, Ebv):
+    SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, metallicity, log_g, Ebv)
+    
+    filter_bands = {'GBP':0.532, 'G': 0.673, 'GRP':0.797, 
+                    'J':1.25, 'H':1.65, 'K':2.15,
+                    'W1':3.4, 'W2':4.6, 'W3':12, 'W4':22} 
+    
+    selected_bands = [name for name, wav in filter_bands.items() if wav in filter_wavelen.value]
+    SED_values = []
+    for i in selected_bands:
+        SED_values.append(convolution(SED_fluxes_Jy, SED_wavelen, i))
 
+    return np.array(SED_values) * u.Jy
 # %%  Testing the function
-'''star_name = 1019003226022657920
-Teff = 5581 
-mettalicity = 0.33
-log_g = 4.33
-Ebv = 0.3'''
-#SED_flux_bands(Teff, mettalicity, log_g, Ebv)
+'''star_name = '55 Cnc'
+Teff = 5353
+metallicity = 0.3
+log_g = 4.3
+Ebv = 0.043
+#SED_flux_bands(Teff, mettalicity, log_g, Ebv)^
+filter_wavelen = band_wavelen(None)
 
+SED_bands(filter_wavelen, Teff, metallicity, log_g, Ebv)'''
