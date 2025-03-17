@@ -88,7 +88,7 @@ def SED_attenuated(Teff, mettalicity, logg, Ebv):
     return wavelen, flux_attenuated
 
 # %% Create a list of SED flux values with the size and wavelengths of the filter list
-'''def SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv):
+def SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv):
     SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, mettalicity, log_g, Ebv)
     nearest_index = []
     for i in range(len(filter_wavelen)):
@@ -96,7 +96,7 @@ def SED_attenuated(Teff, mettalicity, logg, Ebv):
 
     model_flux_values_Jy = np.array([SED_fluxes_Jy[i].value for i in nearest_index]) * u.Jy
 
-    return filter_wavelen, model_flux_values_Jy'''
+    return filter_wavelen, model_flux_values_Jy
 # %% 
 def SED_bands(filter_wavelen, Teff, metallicity, log_g, Ebv):
     SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, metallicity, log_g, Ebv)
