@@ -40,7 +40,7 @@ def likelihood(params, obs_flux, obs_flux_unc, filter_wavelen, Ebv):
         
         #return (-0.5 * np.sum(c + ((obs_flux - model_flux_scaled)**2 / obs_flux_unc**2)))
     
-        return np.sum(stats.norm.logpdf(obs_flux, loc = model_flux_scaled, scale = obs_flux_unc))
+        return np.sum(stats.norm.logpdf(obs_flux, loc = model_flux_scaled, scale = 2 * obs_flux_unc))
 
 def prior(params, exp_distance, exp_temperature, temp_unc, exp_log, log_unc, exp_met, met_unc):
         distance, temperature, log_g, metallicity, radius = params
