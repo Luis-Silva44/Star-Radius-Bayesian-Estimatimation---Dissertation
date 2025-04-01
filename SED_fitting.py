@@ -33,8 +33,8 @@ def SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, unit):
     unit_change = 1 * u.parsec
     distance = (1 / parallax.value) * unit_change
     filter_wavelen, photometry_flux_Jy = get_flux_values(star_name)
-    SED_flux_Jy = SED_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
-    #_, SED_flux_Jy = SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
+    #SED_flux_Jy = SED_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
+    _, SED_flux_Jy = SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
     photometry_flux = flux_unit_change(photometry_flux_Jy, unit)
     SED_flux = flux_unit_change(SED_flux_Jy, unit)
 
@@ -60,9 +60,9 @@ def SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, unit):
 
     SED_wavelen, SED_att = SED_attenuated(Teff,mettalicity,log_g,Ebv)
     SED_att = flux_unit_change(SED_att, unit)
-    print(max(SED_att * minimization_radius **2 / distance.to(R_sun) ** 2))
+    
     SED_fitting_plot(SED_wavelen, SED_att, SED_flux, filter_wavelen, photometry_flux_vals, photometry_flux_unc, minimization_radius.value, distance)
-
+    
     return minimization_radius, minimization_result
 
 # %% 
@@ -122,12 +122,12 @@ star_data = pd.read_csv('~/tese/testdata/list_stars.txt', sep="\t", header=0, sk
 star_test_subset = star_data.head()
 
 # Uncomment to run for list of stars (approx. 45 seconds)
-problem_list, computed_list, table_list = star_set_tester(star_data, 'SI')
+#problem_list, computed_list, table_list = star_set_tester(star_data, 'SI')
 
 # %% 
-computed_radii = np.array([i.value for i in computed_list])
-table_values = np.array([i.value for i in table_list])
-computed_real_comparison(computed_radii, table_values)
+#computed_radii = np.array([i.value for i in computed_list])
+#table_values = np.array([i.value for i in table_list])
+#computed_real_comparison(computed_radii, table_values)
 
 # %%
 #print(problem_list)
@@ -152,11 +152,11 @@ Ebv = 0.020
 single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
 
 # %%
-star_name = ' HD 113337'
-Teff = 6872 
-logg = 4.296
-mettalicity = 0.24
-table_value = (1.469 * R_sun).to(R_sun)
-Ebv = 0.043
+star_name = 'HD128582'
+Teff = 6168
+logg = 4.17
+mettalicity = 0.098
+table_value = (1.63 * R_sun).to(R_sun)
+Ebv = 0.008
 single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
 # %%
