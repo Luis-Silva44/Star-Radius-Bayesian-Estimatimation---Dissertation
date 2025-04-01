@@ -1,7 +1,7 @@
 # %% Imports
 from auxiliary_functions import * 
 from transmission_test import * 
-
+from model_grid import load_model_grid
 from scipy.interpolate import LinearNDInterpolator
 import pysynphot as S
 import numpy as np
@@ -10,7 +10,11 @@ import astropy.units as u
 from uncertainties import ufloat
 from extinction import apply, ccm89
 
+# %% 
+folder_path = '/home/luis/pysynphot_models/trds/grid/ck04models'
+model_grid = load_model_grid(folder_path)
 # %% Function that creates 8 SED using Kurucz and Castelli models for a cube of parameters
+'''
 def create_SEDs(Teff_vals, mettalicity_vals, logg_vals):
     SED_data = []
 
@@ -20,6 +24,20 @@ def create_SEDs(Teff_vals, mettalicity_vals, logg_vals):
                 try:
                     sed_values = S.Icat('ck04models',teff,mett,logg)
                     SED_data.append(((teff,mett,logg),sed_values))
+                except Exception as e:
+                    print(f"Error getting SED values for Teff={teff}, log_g={logg} and mettalicity={mett}")
+                    
+    return SED_data
+'''
+def create_SEDs_model_grid(Teff_vals, mettalicity_vals, logg_vals):
+    SED_data = []
+
+    for teff in Teff_vals:
+        for mett in mettalicity_vals:
+            for logg in logg_vals:
+                try:
+                    _, flux = model_grid[teff][mett][logg]
+                    SED_data.append(((teff,mett,logg), flux))
                 except Exception as e:
                     print(f"Error getting SED values for Teff={teff}, log_g={logg} and mettalicity={mett}")
                     
@@ -45,36 +63,29 @@ def SED_high_and_low(Teff,mettalicity,logg):
     Teff_values = [Teff_low, Teff_high]
     mettalicity_values =  [mettalicity_low, mettalicity_high]
     logg_values = [logg_low, logg_high]
-
-    SED_data = create_SEDs(Teff_values,mettalicity_values,logg_values)
+    
+    SED_data = create_SEDs_model_grid(Teff_values,mettalicity_values,logg_values)
     return SED_data
 
 # %% Interpolator of the SED flux with the parameter values that we want
 def SED_interpolator(Teff,mettalicity,logg):
+    SED_wavelen, _ = model_grid[3500][0.5][0.5]
     SED_data = SED_high_and_low(Teff,mettalicity,logg)
-    SED_wavelen = SED_data[0][1].wave * u.angstrom
 
     fluxes = []
     points = []
 
     for (parameters, SED_values) in SED_data: 
-        fluxes.append(SED_values.flux)
+        fluxes.append(SED_values)
         points.append(parameters)
     
     fluxes = np.array(fluxes)
     points = np.array(points)
-    
-    interpolated_fluxes = []
 
-    for i in range(len(SED_wavelen)):
-        flux_interpolator = LinearNDInterpolator(points, fluxes[:,i])
-        interpolated_fluxes.append(flux_interpolator(Teff,mettalicity,logg))
+    flux_interpolator = LinearNDInterpolator(points, fluxes)
+    interpolated_fluxes_Jy = np.array(flux_interpolator(Teff,mettalicity,logg)) * u.Jy
 
-    interpolated_fluxes = np.array(interpolated_fluxes) * u.erg / u.cm**2 / u.s / u.angstrom
-
-    SED_wavelen = SED_wavelen.to(u.um)
-    model_flux_Jy = interpolated_fluxes.to(u.Jy, u.spectral_density(SED_wavelen))   
-    return SED_wavelen, model_flux_Jy
+    return SED_wavelen, interpolated_fluxes_Jy
 
 # %% Function that applies extinction to the SED 
 def flux_extinction(wavelen, flux, Ebv):
@@ -90,9 +101,8 @@ def SED_attenuated(Teff, mettalicity, logg, Ebv):
 # %% Create a list of SED flux values with the size and wavelengths of the filter list
 def SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv):
     SED_wavelen, SED_fluxes_Jy = SED_attenuated(Teff, mettalicity, log_g, Ebv)
-    nearest_index = []
-    for i in range(len(filter_wavelen)):
-        nearest_index.append(find_nearest_index(SED_wavelen, filter_wavelen[i]))
+
+    nearest_index = np.abs(SED_wavelen[:, None] - filter_wavelen).argmin(axis=0)
 
     model_flux_values_Jy = np.array([SED_fluxes_Jy[i].value for i in nearest_index]) * u.Jy
 
@@ -112,12 +122,14 @@ def SED_bands(filter_wavelen, Teff, metallicity, log_g, Ebv):
 
     return np.array(SED_values) * u.Jy
 # %%  Testing the function
-'''star_name = '55 Cnc'
+
+star_name = '55 Cnc'
 Teff = 5353
 metallicity = 0.3
 log_g = 4.3
 Ebv = 0.043
-#SED_flux_bands(Teff, mettalicity, log_g, Ebv)^
+#SED_flux_bands(Teff, mettalicity, log_g, Ebv)
 filter_wavelen = band_wavelen(None)
 
-SED_bands(filter_wavelen, Teff, metallicity, log_g, Ebv)'''
+synth_phot = SED_bands(filter_wavelen, Teff, metallicity, log_g, Ebv)
+print(synth_phot)
