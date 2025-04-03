@@ -33,8 +33,8 @@ def SED_fitting(star_name, Teff, mettalicity, log_g, Ebv, unit):
     unit_change = 1 * u.parsec
     distance = (1 / parallax.value) * unit_change
     filter_wavelen, photometry_flux_Jy = get_flux_values(star_name)
-    #SED_flux_Jy = SED_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
-    _, SED_flux_Jy = SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
+    SED_flux_Jy = SED_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
+    #_, SED_flux_Jy = SED_flux_bands(filter_wavelen, Teff, mettalicity, log_g, Ebv)
     photometry_flux = flux_unit_change(photometry_flux_Jy, unit)
     SED_flux = flux_unit_change(SED_flux_Jy, unit)
 
@@ -143,12 +143,12 @@ HD 219134
 HD128582
 '''
 # %% 
-star_name =  'WASP-84'
-Teff =  5221
-logg = 4.28
-mettalicity = 0.05
-table_value = (0.828 * R_sun).to(R_sun)
-Ebv = 0.020
+star_name =  'KELT-6'
+Teff =  6246
+logg = 4.22
+mettalicity = -0.22
+table_value = (1.643 * R_sun).to(R_sun)
+Ebv = 0.021
 single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
 
 # %%
