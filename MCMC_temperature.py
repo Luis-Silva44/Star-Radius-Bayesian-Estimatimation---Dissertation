@@ -193,16 +193,16 @@ def star_tester_main(star_name, exp_Teff, Teff_unc, log_g, log_unc, metallicity,
 
 # %% 
 
-star_name = 'WASP-8'
-exp_Teff = 5690
-Teff_unc = 36
-log_g = 4.42
-log_unc = 0.15
-metallicity = 0.29
-met_unc = 0.03
-Ebv = 0.0
-table_value = 1.045
+star_name = 'KELT-6'
+exp_Teff = 6246
+Teff_unc = 88
+log_g = 4.22
+log_unc = 0.09
+metallicity = -0.22
+met_unc = 0.06
+Ebv = 0.021
+table_value = 1.643
 nwalkers = 30
 
-#star_tester_main(star_name, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, Ebv, table_value, nwalkers)
+star_tester_main(star_name, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, Ebv, table_value, nwalkers)
 # %%
