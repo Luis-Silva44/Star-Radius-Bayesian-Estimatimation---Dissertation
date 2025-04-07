@@ -79,7 +79,7 @@ def posterior(params, obs_flux, obs_flux_unc, exp_distance, exp_temperature, tem
 def initialize_noise(flux, nwalkers):
     return np.random.uniform(0.01 * flux, 0.1 * flux, size=nwalkers)
 
-def complete_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, filter_wavelen):
+def complete_MCMC(nwalkers, npoints, exp_values, obs_flux, obs_flux_unc, filter_wavelen):
     exp_distance, exp_temperature, temp_unc, exp_log, log_unc, exp_met, met_unc, exp_Ebv, exp_radius = exp_values 
 
     pos_main = np.array([exp_distance.value.nominal_value + exp_distance.value.std_dev * np.random.randn(nwalkers), 
@@ -95,7 +95,7 @@ def complete_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, filter_wavelen):
     nwalkers, ndim = pos.shape
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim, posterior, args=(obs_flux, obs_flux_unc, exp_distance, exp_temperature, temp_unc, exp_log, log_unc, exp_met, met_unc, filter_wavelen), pool = multiprocessing.Pool(12))
-    state = sampler.run_mcmc(pos, 2000, progress=True)
+    state = sampler.run_mcmc(pos, npoints, progress=True)
 
     labels = ["Distance", "Temperature", "Log g", "Metallicity", "E(B-V)", "Radius"]
     fig, axes = plt.subplots(6, figsize=(10, 7), sharex=True)
@@ -110,11 +110,11 @@ def complete_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, filter_wavelen):
 
     axes[-1].set_xlabel("step number")
 
-    flat_samples = sampler.get_chain(discard = 500, flat=True)[:,:6]
+    flat_samples = sampler.get_chain(discard = npoints // 3, flat=True)[:,:6]
     fig = corner.corner(flat_samples, labels=labels)
     plt.show()
 
-    expected_values = [exp_distance.value.nominal_value, exp_temperature, exp_log, exp_met, exp_Ebv, exp_radius.value]
+    expected_values = [exp_distance.value.nominal_value, exp_temperature, exp_log, exp_met, exp_Ebv, exp_radius]
     for i in range(ndim - 8):
         mcmc = np.percentile(flat_samples[:, i], [16, 50, 84])
         q = np.diff(mcmc)
@@ -123,7 +123,7 @@ def complete_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, filter_wavelen):
         display(Math(txt))
         print('Error in ', labels[i], '=', abs(mcmc[1] - expected_values[i]) / expected_values[i] * 100)
         if i == 5:
-            return (mcmc[1] * R_sun).to(R_sun), sampler
+            return (mcmc[1] * R_sun).to(R_sun), (q[0] + q[1])/ 2, sampler
 # %%
 star_name = 'WASP-84'
 expected_Ebv = 0.020
@@ -147,7 +147,7 @@ obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
 
 exp_values = (exp_distance, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, expected_Ebv, table_value)
 
-_, sampler1 = complete_MCMC(exp_values, 30, obs_flux, obs_flux_unc, filter_wavelen)
+#_, sampler1 = complete_MCMC(exp_values, 30, obs_flux, obs_flux_unc, filter_wavelen)
 
 # %%
 star_name = 'HD128582'
@@ -172,7 +172,7 @@ obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
 
 exp_values = (exp_distance, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, expected_Ebv, table_value)
 
-_, sampler2 = complete_MCMC(exp_values, 30, obs_flux, obs_flux_unc, filter_wavelen)
+#_, sampler2 = complete_MCMC(exp_values, 30, obs_flux, obs_flux_unc, filter_wavelen)
 
 # %% 
 star_name = 'HD 49674'
@@ -196,39 +196,22 @@ obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
 
 exp_values = (exp_distance, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, expected_Ebv, table_value)
 
-_, sampler3 = complete_MCMC(exp_values, 30, obs_flux, obs_flux_unc, filter_wavelen)
+#_, sampler3 = complete_MCMC(exp_values, 30, obs_flux, obs_flux_unc, filter_wavelen)
 
-
-# %% 
-teff_values = np.linspace(4001, 6001, 20)
-
-prior_list = []
-likelihood_list = []
-posterior_list = []
-
-for i in teff_values:
-    params = (exp_distance.value.nominal_value, i, log_g, metallicity, expected_Ebv, table_value.value)
-    prior_value = prior(params, exp_distance, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc)
-    likelihood_value = likelihood(params, obs_flux, obs_flux_unc, filter_wavelen)
-    post_value = posterior(params, obs_flux, obs_flux_unc, exp_distance, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, filter_wavelen)
-    prior_list.append(prior_value)
-    likelihood_list.append(likelihood_value)
-    posterior_list.append(post_value)
-# %%
-plt.plot(teff_values, (prior_list))
-plt.title('Prior probability distribution')
-plt.xlabel('Temperature')
-plt.ylabel('Probability')
-plt.show()
-plt.plot(teff_values, (likelihood_list))
-plt.title('Likelihood probability distribution')
-plt.xlabel('Temperature')
-plt.ylabel('Probability')
-plt.show()
-plt.plot(teff_values, (posterior_list))
-plt.title('Posterior probability distribution')
-plt.xlabel('Temperature')
-plt.ylabel('Probability')
-plt.show()
 
 # %%
+def star_tester_complete(star_name, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, exp_Ebv, table_value, nwalkers, npoints):
+    _, parallax, _= gaia_values(star_name)
+    unit_change = 1 * u.parsec
+    exp_distance = (1 / parallax.value) * unit_change
+
+    filter_wavelen, flux_values = get_flux_values(star_name)
+    obs_flux = np.array([m.value.nominal_value for m in flux_values])
+    obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
+
+    exp_values = (exp_distance, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, exp_Ebv, table_value)
+
+    computed_radius, e_radius, sampler = complete_MCMC(nwalkers, npoints, exp_values, obs_flux, obs_flux_unc, filter_wavelen)
+
+    return computed_radius, e_radius, sampler
+
