@@ -81,7 +81,7 @@ def posterior(params, obs_flux, obs_flux_unc, exp_distance, exp_temperature, tem
 def initialize_noise(flux, nwalkers):
     return np.random.uniform(0.01 * flux, 0.1 * flux, size=nwalkers)
 
-def basic_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, filter_wavelen, Ebv):
+def basic_MCMC(nwalkers, npoints, exp_values, obs_flux, obs_flux_unc, filter_wavelen, Ebv):
     exp_distance, exp_temperature, temp_unc, exp_log, log_unc, exp_met, met_unc, exp_radius = exp_values 
 
     pos_main = np.array([exp_distance.value.nominal_value + exp_distance.value.std_dev * np.random.randn(nwalkers), 
@@ -98,7 +98,7 @@ def basic_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, filter_wavelen, Ebv
     nwalkers, ndim = pos.shape
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim, posterior, args=(obs_flux, obs_flux_unc, exp_distance, exp_temperature, temp_unc, exp_log, log_unc, exp_met, met_unc, filter_wavelen, Ebv), pool = multiprocessing.Pool(12))
-    state = sampler.run_mcmc(pos, 2000, progress=True)
+    state = sampler.run_mcmc(pos, npoints, progress=True)
 
     labels = ["Distance", "Temperature", "Log g", "Metallicity", "Radius"]
     fig, axes = plt.subplots(5, figsize=(10, 7), sharex=True)
@@ -113,7 +113,7 @@ def basic_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, filter_wavelen, Ebv
 
     axes[-1].set_xlabel("step number")
 
-    flat_samples = sampler.get_chain(discard = 500, flat=True)[:,:5]
+    flat_samples = sampler.get_chain(discard = npoints//3, flat=True)[:,:5]
     fig = corner.corner(flat_samples, labels=labels)
     plt.show()
 
@@ -126,7 +126,7 @@ def basic_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, filter_wavelen, Ebv
         display(Math(txt))
         print('Error in ', labels[i], '=', abs(mcmc[1] - expected_values[i]) / expected_values[i] * 100)
         if i == 4:
-            return (mcmc[1] * R_sun).to(R_sun), sampler
+            return (mcmc[1] * R_sun).to(R_sun), (q[0]+q[1])/2 , sampler
 # %%
 star_name = 'WASP-84'
 Ebv = 0.020
@@ -149,7 +149,7 @@ obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
 
 exp_values = (exp_distance, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, table_value)
 
-_, sampler1 = basic_MCMC(exp_values, 26, obs_flux, obs_flux_unc, filter_wavelen, Ebv)
+#_, sampler1 = basic_MCMC(exp_values, 26, obs_flux, obs_flux_unc, filter_wavelen, Ebv)
 
 # %%
 star_name = 'HD128582'
@@ -173,10 +173,9 @@ obs_flux_unc = np.array([m.value.std_dev for m in flux_values])
 
 exp_values = (exp_distance, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, table_value)
 
-_, sampler2 = basic_MCMC(exp_values, 26, obs_flux, obs_flux_unc, filter_wavelen, Ebv)
+#_, sampler2 = basic_MCMC(exp_values, 26, obs_flux, obs_flux_unc, filter_wavelen, Ebv)
 # %%
-def star_tester_main(star_name, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, Ebv, table_value, nwalkers):
-    table_value = (table_value * R_sun).to(R_sun)
+def star_tester_main(star_name, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, Ebv, table_value, nwalkers, npoints):
     _, parallax, _= gaia_values(star_name)
     unit_change = 1 * u.parsec
     exp_distance = (1 / parallax.value) * unit_change
@@ -187,9 +186,9 @@ def star_tester_main(star_name, exp_Teff, Teff_unc, log_g, log_unc, metallicity,
 
     exp_values = (exp_distance, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, table_value)
 
-    _, sampler = basic_MCMC(exp_values, nwalkers, obs_flux, obs_flux_unc, filter_wavelen, Ebv)
+    computed_radius, e_radius, sampler = basic_MCMC(nwalkers, npoints, exp_values, obs_flux, obs_flux_unc, filter_wavelen, Ebv)
 
-    return sampler
+    return computed_radius, e_radius, sampler
 
 # %% 
 
@@ -204,5 +203,7 @@ Ebv = 0.021
 table_value = 1.643
 nwalkers = 30
 
-star_tester_main(star_name, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, Ebv, table_value, nwalkers)
+#star_tester_main(star_name, exp_Teff, Teff_unc, log_g, log_unc, metallicity, met_unc, Ebv, table_value, nwalkers)
+# %%
+
 # %%
