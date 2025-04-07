@@ -149,7 +149,7 @@ logg = 4.22
 mettalicity = -0.22
 table_value = (1.643 * R_sun).to(R_sun)
 Ebv = 0.021
-single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
+#single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
 
 # %%
 star_name = 'HD128582'
@@ -158,5 +158,5 @@ logg = 4.17
 mettalicity = 0.098
 table_value = (1.63 * R_sun).to(R_sun)
 Ebv = 0.008
-single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
+#single_star_tester(star_name, Teff, mettalicity, logg, Ebv, table_value, 'SI')
 # %%
