@@ -131,5 +131,5 @@ Ebv = 0.043
 #SED_flux_bands(Teff, mettalicity, log_g, Ebv)
 filter_wavelen = band_wavelen(None)
 
-synth_phot = SED_bands(filter_wavelen, Teff, metallicity, log_g, Ebv)
-print(synth_phot)
+#synth_phot = SED_bands(filter_wavelen, Teff, metallicity, log_g, Ebv)
+#print(synth_phot)
