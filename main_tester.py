@@ -75,7 +75,7 @@ def main_star_tester(star_list,output_file):
 
 star_data = pd.read_csv('~/tese/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
 
-problem_stars = main_star_tester(star_data,output_file)
+#problem_stars = main_star_tester(star_data,output_file)
 
 # %%
 results = pd.read_csv(output_file)
@@ -94,7 +94,7 @@ axs.set_xlim(0.6)
 axs.set_ylim(0.6)
 
 # %%
-def add_extinction_radius(output_file, star_list):
+def add_radius(output_file, star_list):
     problem_stars = []
     data = pd.read_csv(output_file)
 
@@ -102,41 +102,40 @@ def add_extinction_radius(output_file, star_list):
         data['Extinction_Radius'] = np.nan
     if 'e_Extinction_Radius' not in data.columns:
         data['e_Extinction_Radius'] = np.nan
+    if 'Extinction_0_Radius' not in data.columns:
+        data['Extinction_0_Radius'] = np.nan
+    if 'e_Extinction_0_Radius' not in data.columns:
+        data['e_Extinction_0_Radius'] = np.nan
 
     for id, row in data.iterrows():
         star_name = row['Star']
         print('Adding to star', star_name)
 
-        if math.isnan(row['Extinction_Radius']):
+        match = star_list[star_list['Star'] == star_name]
+        match_row = match.iloc[0]
 
-            match = star_list[star_list['Star'] == star_name]
+        Teff = match_row['Teff']
+        e_Teff = match_row['eTeff']
+        metallicity = match_row['Fe/H']
+        e_metal = match_row['eFe/H']
+        log_g = match_row['logg']
+        e_log_g = match_row['elogg']
+        exp_Ebv = float(match_row['E(B-V)'])
+        table_value = match_row['Radius']
+        e_table_value = match_row['erRadius']
+
+        table_value = (table_value * R_sun).to(R_sun)
+        e_table_value = (e_table_value * R_sun).to(R_sun)
+
+        if math.isnan(row['Extinction_Radius']):
             
             try: 
-                match_row = match.iloc[0]
-
-                Teff = match_row['Teff']
-                e_Teff = match_row['eTeff']
-                metallicity = match_row['Fe/H']
-                e_metal = match_row['eFe/H']
-                log_g = match_row['logg']
-                e_log_g = match_row['elogg']
-                exp_Ebv = float(match_row['E(B-V)'])
-                table_value = match_row['Radius']
-                e_table_value = match_row['erRadius']
-
-                # Convert to astropy quantities
-                table_value = (table_value * R_sun).to(R_sun)
-                e_table_value = (e_table_value * R_sun).to(R_sun)
-
-                # Call your model
                 ext_radius, e_ext_radius, _ = star_tester_complete(
                     star_name, Teff, e_Teff, log_g, e_log_g,
                     metallicity, e_metal, exp_Ebv,
                     table_value.value,
                     nwalkers=30, npoints=1200
                 )
-
-                # Save results
                 data.at[id, 'Extinction_Radius'] = round(ext_radius.value, 3)
                 data.at[id, 'e_Extinction_Radius'] = round(e_ext_radius, 3)
 
@@ -144,7 +143,21 @@ def add_extinction_radius(output_file, star_list):
             except Exception as e:
                 print(f"Could not compute extinction radius for {star_name}: {e}")
                 problem_stars.append(star_name)
-                
+        
+        if math.isnan(row['Extinction_0_Radius']):
+            
+            try: 
+                ext0_radius, e_ext0_radius, _ = star_tester_main(star_name, Teff, e_Teff, log_g, e_log_g, 
+                                                               metallicity, e_metal, 0.0, table_value, nwalkers=30, npoints=1200)
+
+                data.at[id, 'Extinction_0_Radius'] = round(ext0_radius.value, 3)
+                data.at[id, 'e_Extinction_0_Radius'] = round(e_ext0_radius, 3)
+
+                data.to_csv(output_file, index=False, float_format='%.3f')
+            except Exception as e:
+                print(f"Could not compute radius for E(B-V)=0 for {star_name}: {e}")
+                problem_stars.append(star_name)
+
     return problem_stars
 
 
@@ -152,14 +165,14 @@ def add_extinction_radius(output_file, star_list):
 output_file = '/home/luis/tese/testdata/star_results.csv'
 star_data = pd.read_csv('~/tese/testdata/list_stars.txt', sep="\t", header=0, skiprows=[1])
 
-add_extinction_radius(output_file, star_data)
+add_radius(output_file, star_data)
 # %%
 results = pd.read_csv(output_file)
 exp_radius = np.array(results['Expected_Radius'])
 e_exp_radius = np.array(results['e_Expected_Radius'])
 
-comp_radius = np.array(results['Extinction_Radius'])
-e_comp_radius = np.array(results['e_Extinction_Radius'])
+comp_radius = np.array(results['Extinction_0_Radius'])
+e_comp_radius = np.array(results['e_Extinction_0_Radius'])
 
 fig, axs = plt.subplots()
 axs.errorbar(exp_radius, comp_radius, e_comp_radius, e_exp_radius, 'o', ecolor='red')
